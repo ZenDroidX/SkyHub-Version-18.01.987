@@ -1,0 +1,5 @@
+{
+  "name": "Skyhub",
+  "description": "A secure full-stack identity management platform with 3-tier access control and dark theme.",
+  "requestFramePermissions": []
+}

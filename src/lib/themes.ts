@@ -1,0 +1,23 @@
+export const themes = [
+  { name: 'Default Dark', primary: '#2563eb', bg: '#0a0a0a' },
+  { name: 'Neon Green', primary: '#10b981', bg: '#064e3b' },
+  { name: 'Cyberpunk Red', primary: '#ef4444', bg: '#450a0a' },
+  { name: 'Deep Purple', primary: '#8b5cf6', bg: '#2e1065' },
+  { name: 'Sunset Orange', primary: '#f97316', bg: '#431407' },
+  { name: 'Ocean Blue', primary: '#0ea5e9', bg: '#082f49' },
+  { name: 'Midnight Indigo', primary: '#6366f1', bg: '#1e1b4b' },
+  { name: 'Forest Green', primary: '#22c55e', bg: '#052e16' },
+  { name: 'Hot Pink', primary: '#ec4899', bg: '#500724' },
+  { name: 'Golden Yellow', primary: '#eab308', bg: '#422006' },
+  { name: 'Teal Glow', primary: '#14b8a6', bg: '#042f2e' },
+  { name: 'Rose Red', primary: '#f43f5e', bg: '#4c0519' },
+  { name: 'Slate Gray', primary: '#64748b', bg: '#0f172a' },
+  { name: 'Emerald', primary: '#34d399', bg: '#022c22' },
+  { name: 'Fuchsia', primary: '#d946ef', bg: '#4a044e' },
+  { name: 'Sky Blue', primary: '#38bdf8', bg: '#0c4a6e' },
+  { name: 'Lime', primary: '#84cc16', bg: '#3f6212' },
+  { name: 'Amber', primary: '#f59e0b', bg: '#78350f' },
+  { name: 'Violet', primary: '#a78bfa', bg: '#2e1065' },
+  { name: 'Cyan', primary: '#22d3ee', bg: '#164e63' },
+  { name: 'Monochrome', primary: '#ffffff', bg: '#000000' }
+];

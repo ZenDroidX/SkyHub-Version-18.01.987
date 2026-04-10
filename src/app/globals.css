@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  :root {
+    /* High-Contrast Solar Theme (Crystal Clear Yellow) */
+    --background: 48 100% 95%;
+    --foreground: 0 0% 0%;
+    --card: 48 100% 90%;
+    --card-foreground: 0 0% 0%;
+    --popover: 48 100% 96%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 45 100% 25%;
+    --primary-foreground: 48 100% 95%;
+    --secondary: 48 60% 85%;
+    --secondary-foreground: 0 0% 5%;
+    --muted: 48 40% 88%;
+    --muted-foreground: 0 0% 10%;
+    --accent: 45 100% 80%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 45 100% 15%;
+    --input: 45 100% 15%;
+    --ring: 45 100% 25%;
+    --radius: 2rem;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 2%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 5%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 8%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 100%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 10%;
+    --input: 0 0% 10%;
+    --ring: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased selection:bg-primary/30;
+    background-image: radial-gradient(circle at 1px 1px, rgba(128, 128, 128, 0.05) 1px, transparent 0);
+    background-size: 40px 40px;
+    background-attachment: fixed;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline;
+  }
+}
+
+.glass {
+  @apply bg-card/60 backdrop-blur-xl border border-border shadow-2xl;
+}
+
+.glass-pill {
+  @apply bg-background/60 backdrop-blur-2xl border border-border shadow-2xl;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.02); }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 6s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.3);
+}
+
+:root { --primary: #6366f1; --bg: #0f172a; }
