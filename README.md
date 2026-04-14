@@ -1,12 +1,12 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+<img width="1200" height="475" alt="GHBanner" src="https://i.postimg.cc/SxZLN9y2/Screenshot-20260410-220053-Chrome.png" />
 </div>
 
-# Run and deploy your AI Studio app
+# Run and deploy your Custom Rom Web-App
 
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/fe1b8646-47c1-4daf-badf-db55d5475837
+View your app in Terminal
 
 ## Run Locally
 
@@ -18,3 +18,4 @@ View your app in AI Studio: https://ai.studio/apps/fe1b8646-47c1-4daf-badf-db55d
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+   
