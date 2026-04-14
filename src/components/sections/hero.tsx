@@ -29,9 +29,12 @@ export function Hero() {
 
   const upiId = settings?.upiId || DEFAULT_DONATION_CONFIG.upiId;
   const qrUrl = settings?.qrImageUrl || DEFAULT_DONATION_CONFIG.qrImageUrl;
-  const telegramChannel = settings?.telegramChannelUrl || DEFAULT_DONATION_CONFIG.telegramChannelUrl;
-  const telegramDiscussion = settings?.telegramDiscussionUrl || DEFAULT_DONATION_CONFIG.telegramDiscussionUrl;
+  const telegramChannel = globalSettings?.socialLinks?.telegramChannel || DEFAULT_DONATION_CONFIG.telegramChannelUrl;
+  const telegramDiscussion = globalSettings?.socialLinks?.discussion || DEFAULT_DONATION_CONFIG.telegramDiscussionUrl;
   const telegramLogo = settings?.telegramLogoUrl || DEFAULT_DONATION_CONFIG.telegramLogoUrl;
+  const paymentLink = globalSettings?.supportLinks?.paymentLink || DEFAULT_DONATION_CONFIG.paymentLink;
+  const qrLink = globalSettings?.supportLinks?.qrLink || qrUrl;
+  const slideshowImages = globalSettings?.slideshowImages || [];
 
   const heroTitle = globalSettings?.heroTitle || 'REDMI 12 5G\nPOCO M6 PRO 5G';
   const heroSubtitle = globalSettings?.heroSubtitle || 'The definitive command center for sky-platform development.\nUnleash Snapdragon 4 Gen 2 with premium custom kernels and system builds.';
@@ -46,11 +49,15 @@ export function Hero() {
   };
 
   const handleSupportClick = () => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = `upi://pay?pa=${upiId}&pn=SkyHub&cu=INR`;
+    if (paymentLink) {
+      window.open(paymentLink, '_blank');
     } else {
-      setIsSupportOpen(true);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = `upi://pay?pa=${upiId}&pn=SkyHub&cu=INR`;
+      } else {
+        setIsSupportOpen(true);
+      }
     }
   };
 
@@ -99,7 +106,7 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-medium leading-relaxed tracking-tight whitespace-pre-line"
         >
-          {heroSubtitle}
+          Sky-platform development command center. Unleash your device's potential.
         </motion.p>
 
         {/* Translucent Network Bar Protocol with Lightning Effects */}
@@ -223,7 +230,7 @@ export function Hero() {
           </DialogHeader>
           
           <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            <img src={qrUrl} alt="Payment QR" className="w-full h-full object-contain" />
+            {qrLink && <img src={qrLink} alt="Payment QR" className="w-full h-full object-contain" />}
           </div>
 
           <div className="w-full space-y-4">

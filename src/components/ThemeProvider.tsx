@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { listenGlobalSettings } from '@/lib/themeManager';
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 // Helper to convert hex to HSL string format: "H S% L%"
 function hexToHSL(hex: string): string {
@@ -32,39 +34,101 @@ function hexToHSL(hex: string): string {
 }
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useUser();
+  const db = useFirestore();
+  const userProfileRef = useMemoFirebase(() => user ? doc(db, 'users', user.uid) : null, [db, user]);
+  const { data: profile } = useDoc(userProfileRef);
+  const [globalData, setGlobalData] = useState<any>(null);
+
   useEffect(() => {
     const unsub = listenGlobalSettings((data: any) => {
-      if (data.theme) {
-        Object.entries(data.theme).forEach(([key, value]) => {
-          const hexValue = value as string;
-          if (key === 'primary') {
-            document.documentElement.style.setProperty('--primary', hexToHSL(hexValue));
-          } else if (key === 'bg') {
-            document.documentElement.style.setProperty('--background', hexToHSL(hexValue));
-            document.documentElement.style.setProperty('--bg', hexValue); // Keep for inline styles if needed
-          } else {
-            document.documentElement.style.setProperty(`--color-${key}`, hexValue);
-          }
-        });
-      }
-
-      if (data.faviconUrl) {
-        let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          document.head.appendChild(link);
-        }
-        link.href = data.faviconUrl;
-      }
-
-      if (data.siteName) {
-        document.title = data.siteName;
-      }
+      setGlobalData(data);
     });
-
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const applyStyles = () => {
+      console.log('Applying styles, globalData:', globalData, 'profile:', profile);
+      const isLightMode = document.documentElement.classList.contains('light');
+      
+      // Determine which theme to apply: global theme takes precedence over user theme
+      const themeToApply = globalData?.theme || profile?.theme;
+      console.log('Theme to apply:', themeToApply);
+
+      if (isLightMode) {
+        // Clear inline styles to allow CSS classes to take over
+        [
+          '--primary', '--background', '--bg', '--site-gradient', 
+          '--font-sans', '--font-body', '--radius', '--spacing-custom'
+        ].forEach(prop => document.documentElement.style.removeProperty(prop));
+        return;
+      }
+
+      if (themeToApply) {
+        // Reset gradient to transparent first to avoid lingering gradients
+        document.documentElement.style.setProperty('--site-gradient', 'transparent');
+        
+        // Apply theme properties
+        Object.entries(themeToApply).forEach(([key, value]) => {
+          const stringValue = value as string;
+          if (key === 'primary') {
+            document.documentElement.style.setProperty('--primary', hexToHSL(stringValue));
+          } else if (key === 'gradient') {
+            document.documentElement.style.setProperty('--site-gradient', stringValue);
+            document.documentElement.style.setProperty('--button-gradient', stringValue);
+          } else if (key === 'bg') {
+            document.documentElement.style.setProperty('--background', hexToHSL(stringValue));
+            document.documentElement.style.setProperty('--bg', stringValue);
+            // If no gradient is set, use the background color as the gradient
+            if (!themeToApply.gradient) {
+              document.documentElement.style.setProperty('--site-gradient', stringValue);
+            }
+          } else if (key === 'fontFamily') {
+            document.documentElement.style.setProperty('--font-sans', stringValue);
+            document.documentElement.style.setProperty('--font-body', stringValue);
+          } else if (key === 'borderRadius') {
+            document.documentElement.style.setProperty('--radius', stringValue);
+          } else if (key === 'spacing') {
+            document.documentElement.style.setProperty('--spacing-custom', stringValue);
+          } else {
+            document.documentElement.style.setProperty(`--color-${key}`, stringValue);
+          }
+        });
+      } else {
+        // Reset to default
+        document.documentElement.style.setProperty('--site-gradient', '#0a0a0a'); // Default dark background
+        document.documentElement.style.setProperty('--primary', '221.2 83.2% 53.3%');
+        document.documentElement.style.setProperty('--background', '0 0% 100%');
+        document.documentElement.style.setProperty('--bg', '#ffffff');
+        document.documentElement.style.setProperty('--font-sans', 'Inter');
+        document.documentElement.style.setProperty('--font-body', 'Inter');
+        document.documentElement.style.setProperty('--radius', '0.5rem');
+        document.documentElement.style.setProperty('--spacing-custom', '1rem');
+      }
+    };
+
+    applyStyles();
+
+    if (globalData?.faviconUrl) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = globalData.faviconUrl;
+    }
+
+    if (globalData?.siteName) {
+      document.title = globalData.siteName;
+    }
+
+    const observer = new MutationObserver(applyStyles);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    return () => observer.disconnect();
+  }, [globalData, profile?.theme]);
 
   return <>{children}</>;
 }

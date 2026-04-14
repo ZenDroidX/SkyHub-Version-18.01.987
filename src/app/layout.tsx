@@ -13,6 +13,7 @@ import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
 import ThemeProvider from '@/components/ThemeProvider';
+import { SearchProvider } from '@/context/SearchContext';
 
 function RootContent({ children }: { children: React.ReactNode }) {
   const db = useFirestore();
@@ -112,11 +113,13 @@ export default function RootLayout({
       </head>
       <body style={{backgroundColor:'var(--bg)', color:'white'}} className="font-body antialiased selection:bg-primary/30 min-h-screen overflow-x-hidden">
         <FirebaseClientProvider>
-          <ThemeProvider>
-            <RootContent>
-              {children}
-            </RootContent>
-          </ThemeProvider>
+          <SearchProvider>
+            <ThemeProvider>
+              <RootContent>
+                {children}
+              </RootContent>
+            </ThemeProvider>
+          </SearchProvider>
           <Toaster />
         </FirebaseClientProvider>
       </body>

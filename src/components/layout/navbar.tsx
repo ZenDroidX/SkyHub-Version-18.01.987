@@ -24,11 +24,14 @@ import {
   Copy,
   Check,
   Send,
-  MessageSquare
+  MessageSquare,
+  Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useSearch } from '@/context/SearchContext';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
@@ -75,9 +78,11 @@ export function Navbar() {
 
   const upiId = settings?.upiId || DEFAULT_DONATION_CONFIG.upiId;
   const qrUrl = settings?.qrImageUrl || DEFAULT_DONATION_CONFIG.qrImageUrl;
-  const logoUrl = settings?.logoUrl || DEFAULT_DONATION_CONFIG.logoUrl;
-  const telegramChannel = settings?.telegramChannelUrl || DEFAULT_DONATION_CONFIG.telegramChannelUrl;
-  const telegramDiscussion = settings?.telegramDiscussionUrl || DEFAULT_DONATION_CONFIG.telegramDiscussionUrl;
+  const logoUrl = globalSettings?.logoUrl || DEFAULT_DONATION_CONFIG.logoUrl;
+  const telegramChannel = globalSettings?.socialLinks?.telegramChannel || DEFAULT_DONATION_CONFIG.telegramChannelUrl;
+  const telegramDiscussion = globalSettings?.socialLinks?.discussion || DEFAULT_DONATION_CONFIG.telegramDiscussionUrl;
+  const paymentLink = globalSettings?.supportLinks?.paymentLink || DEFAULT_DONATION_CONFIG.paymentLink;
+  const qrLink = globalSettings?.supportLinks?.qrLink || qrUrl;
   const brandName = globalSettings?.brandName || 'SKY HUB';
 
   const isSuperAdmin = user?.email && HUB_OWNERS.includes(user.email.toLowerCase());
@@ -112,11 +117,15 @@ export function Navbar() {
   };
 
   const handleSupportClick = () => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = `upi://pay?pa=${upiId}&pn=SkyHub&cu=INR`;
+    if (paymentLink) {
+      window.open(paymentLink, '_blank');
     } else {
-      setIsSupportOpen(true);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = `upi://pay?pa=${upiId}&pn=SkyHub&cu=INR`;
+      } else {
+        setIsSupportOpen(true);
+      }
     }
   };
 
@@ -126,6 +135,8 @@ export function Navbar() {
     toast({ title: "Registry Copied", description: "UPI ID added to clipboard." });
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const { searchQuery, setSearchQuery } = useSearch();
 
   const navLinks = [
     { name: 'ROMs', href: '/#roms', icon: <Cpu className="w-3.5 h-3.5" /> },
@@ -173,6 +184,23 @@ export function Navbar() {
             </motion.div>
           </Link>
         ))}
+        
+        <div className="w-px h-4 bg-border mx-2" />
+
+        <div className="relative flex items-center">
+          <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground" />
+          <Input 
+            placeholder="Search..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                window.location.href = '/search';
+              }
+            }}
+            className="h-9 w-40 rounded-full bg-muted/50 border-border text-[10px] pl-9"
+          />
+        </div>
         
         <div className="w-px h-4 bg-border mx-2" />
 
@@ -453,7 +481,7 @@ export function Navbar() {
           </DialogHeader>
           
           <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            <img src={qrUrl} alt="Payment QR" className="w-full h-full object-contain" />
+            <img src={qrLink} alt="Payment QR" className="w-full h-full object-contain" />
           </div>
 
           <div className="w-full space-y-4">

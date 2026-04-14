@@ -70,9 +70,71 @@
             }
           }
         },
+        "slideshowImages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": { "type": "string" },
+              "orientation": { "type": "string" },
+              "size": { "type": "string" }
+            }
+          }
+        },
+        "supportLinks": {
+          "type": "object",
+          "properties": {
+            "paymentLink": { "type": "string" },
+            "qrLink": { "type": "string" }
+          }
+        },
+        "socialLinks": {
+          "type": "object",
+          "properties": {
+            "telegramChannel": { "type": "string" },
+            "discussion": { "type": "string" }
+          }
+        },
+        "notifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "message": { "type": "string" },
+              "scheduledTime": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "layoutConfig": {
+          "type": "array",
+          "description": "The layout configuration for the site.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "order": { "type": "number" },
+              "visible": { "type": "boolean" },
+              "columns": { "type": "number" },
+              "gap": { "type": "number" },
+              "padding": { "type": "string" },
+              "margin": { "type": "string" }
+            }
+          }
+        },
         "updatedBy": { "type": "string" },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A post fetched from the Telegram channel.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "url": { "type": "string" }
+      },
+      "required": ["content", "date", "url"]
     }
   },
   "firestore": {
@@ -83,6 +145,10 @@
     "/settings/global": {
       "schema": "SiteSettings",
       "description": "Global site configuration."
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Collection of Telegram posts."
     }
   }
 }

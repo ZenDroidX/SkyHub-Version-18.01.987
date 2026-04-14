@@ -1,8 +1,11 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import Autoplay from 'embla-carousel-autoplay';
 import { 
   ArrowLeft, 
   Shield, 
@@ -86,11 +89,14 @@ import {
   updateDocumentNonBlocking,
   useStorage
 } from '@/firebase';
-import { collection, doc, setDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '@/lib/utils';
+import { logActivity } from '@/lib/activity-logger';
 import { toast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { DEFAULT_DONATION_CONFIG, StormConfig } from '@/lib/store';
+import { themes } from '@/lib/themes';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { extractRoms, extractRomsFromRawHtml } from '@/ai/flows/extract-roms-flow';
@@ -152,6 +158,8 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string>(initialTab || '');
   const [isAdding, setIsAdding] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
@@ -164,6 +172,7 @@ export default function DashboardPage() {
 
   const [isBootAnimationEnabled, setIsBootAnimationEnabled] = useState(true);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [fetchedPosts, setFetchedPosts] = useState<string[]>([]);
 
   // Logo Management States
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -172,7 +181,13 @@ export default function DashboardPage() {
 
   const [editUsername, setEditUsername] = useState('');
   const [editProfileImage, setEditProfileImage] = useState('');
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
+  const [gradientColors, setGradientColors] = useState({ color1: '#2563eb', color2: '#1e40af' });
+  const [gradientDirection, setGradientDirection] = useState(90);
+  const [useGradient, setUseGradient] = useState(false);
 
   const [siteName, setSiteName] = useState('');
   const [brandName, setBrandName] = useState('');
@@ -272,6 +287,27 @@ export default function DashboardPage() {
   const { data: guides } = useCollection(guidesQuery);
   const { data: rootPackages } = useCollection(rootQuery);
 
+  const handleAddPost = async (content: string, collectionName: string) => {
+    setIsAdding(true);
+    try {
+      const collRef = collection(db, collectionName);
+      const newDocRef = doc(collRef);
+      await setDoc(newDocRef, {
+        id: newDocRef.id,
+        title: content.substring(0, 50) + '...',
+        content: content,
+        developer: profile?.username || 'Admin',
+        createdAt: serverTimestamp(),
+      });
+      await logActivity(db, currentUser.uid, `Added post to ${collectionName}`);
+      toast({ title: "Added to " + collectionName });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Failed to add", description: e.message });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedText(id);
@@ -279,15 +315,35 @@ export default function DashboardPage() {
     setTimeout(() => setCopiedText(null), 2000);
   };
 
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    setProfileImageFile(file);
+    setEditProfileImage(URL.createObjectURL(file));
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': [] },
+    multiple: false
+  });
+
   const handleSaveProfile = async () => {
     if (!currentUser) return;
     setIsSavingProfile(true);
+    let imageUrl = editProfileImage;
     try {
+      if (profileImageFile) {
+        const storageRef = ref(storage, `users/${currentUser.uid}/profile.jpg`);
+        await uploadBytes(storageRef, profileImageFile);
+        imageUrl = await getDownloadURL(storageRef);
+      }
       await updateDocumentNonBlocking(doc(db, 'users', currentUser.uid), {
         username: editUsername,
-        profileImageUrl: editProfileImage
+        profileImageUrl: imageUrl
       });
+      await logActivity(db, currentUser.uid, 'Updated profile');
       toast({ title: "Profile updated successfully" });
+      setProfileImageFile(null);
     } catch (error) {
       console.error(error);
       toast({ title: "Failed to update profile", variant: "destructive" });
@@ -322,6 +378,7 @@ export default function DashboardPage() {
         brandName,
         heroTitle,
         heroSubtitle,
+        gradient: useGradient ? { colors: gradientColors, direction: gradientDirection } : null,
         ...(faviconUrl && { faviconUrl })
       }, { merge: true });
       
@@ -433,8 +490,30 @@ export default function DashboardPage() {
 
   const handleDelete = async (collectionName: string, id: string) => {
     try {
-      await deleteDocumentNonBlocking(doc(db, collectionName, id));
-      toast({ title: "Removed from registry" });
+      const docRef = doc(db, collectionName, id);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) return;
+      const docData = docSnap.data();
+
+      await deleteDocumentNonBlocking(docRef);
+      
+      toast({ 
+        title: "Removed from registry",
+        description: "Item has been deleted.",
+        action: (
+          <ToastAction altText="Undo" onClick={async () => {
+            try {
+              await setDoc(doc(db, collectionName, id), docData);
+              toast({ title: "Restored", description: "Item has been restored." });
+            } catch (e) {
+              toast({ variant: "destructive", title: "Failed to restore" });
+            }
+          }}>
+            Undo
+          </ToastAction>
+        ),
+        duration: 10000,
+      });
     } catch (e) { toast({ variant: "destructive", title: "Failed" }); }
   };
 
@@ -454,15 +533,15 @@ export default function DashboardPage() {
     } catch (e) { toast({ variant: "destructive", title: "Error" }); }
   };
 
-  const handleAddResource = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEditResource = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!editingItem) return;
     setIsAdding(true);
     const formData = new FormData(e.currentTarget);
     let collectionName = activeTab === 'guides' ? 'tutorials' : activeTab === 'root' ? 'root-packages' : activeTab;
     try {
-      const collRef = collection(db, collectionName);
-      const newDocRef = doc(collRef);
-      const data: any = { id: newDocRef.id, developer: profile?.username || 'Admin', createdAt: serverTimestamp() };
+      const docRef = doc(db, collectionName, editingItem.id);
+      const data: any = { ...editingItem };
       formData.forEach((value, key) => {
         if (key === 'mirrors' || key === 'screenshots' || key === 'steps') {
           data[key] = (value as string).split('\n').filter(Boolean);
@@ -470,19 +549,22 @@ export default function DashboardPage() {
           data[key] = value;
         }
       });
-      await setDoc(newDocRef, data, { merge: true });
-      setIsAddDialogOpen(false);
-      toast({ title: "Resource Synchronized", description: "Added to the global registry." });
-    } catch (e) { toast({ variant: "destructive", title: "Failed to initialize resource." }); }
+      await setDoc(docRef, data, { merge: true });
+      setIsEditDialogOpen(false);
+      setEditingItem(null);
+      toast({ title: "Resource Updated", description: "The registry has been updated." });
+    } catch (e) { toast({ variant: "destructive", title: "Failed to update resource." }); }
     finally { setIsAdding(false); }
   };
 
   const filteredItems = (items: any[] | null) => {
     if (!items) return [];
     if (!searchQuery) return items;
+    const query = searchQuery.toLowerCase();
     return items.filter(item => 
-      (item.name || item.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.developer || '').toLowerCase().includes(searchQuery.toLowerCase())
+      (item.name || item.title || '').toLowerCase().includes(query) ||
+      (item.developer || '').toLowerCase().includes(query) ||
+      (item.description || item.content || '').toLowerCase().includes(query)
     );
   };
 
@@ -522,15 +604,17 @@ export default function DashboardPage() {
           {menuItems.map((item) => (
             <motion.button
               key={item.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.95, y: -5, boxShadow: "0 0 20px 5px rgba(255, 255, 255, 0.5)" }}
               onClick={() => setActiveTab(item.id)}
               className={cn(
-                "flex items-center justify-center gap-3 px-6 py-4 rounded-2xl transition-all font-black text-[9px] uppercase border flex-1 min-w-[140px]",
-                activeTab === item.id ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"
+                "flex items-center justify-center gap-3 px-6 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border flex-1 min-w-[140px]",
+                activeTab === item.id 
+                  ? "bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(255,255,255,0.3)]" 
+                  : "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground"
               )}
             >
-              {item.icon} {item.label}
+              {item.icon} <span className="opacity-100">{item.label}</span>
             </motion.button>
           ))}
         </div>
@@ -554,13 +638,12 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-widest">Profile Image URL</Label>
-                  <Input 
-                    value={editProfileImage} 
-                    onChange={(e) => setEditProfileImage(e.target.value)} 
-                    className="h-14 rounded-2xl bg-black/40 border-border" 
-                    placeholder="https://example.com/image.png"
-                  />
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Profile Image</Label>
+                  <div {...getRootProps()} className={cn("h-32 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary/50 transition-all", isDragActive && "border-primary")}>
+                    <input {...getInputProps()} />
+                    <Upload className="w-8 h-8 text-muted-foreground" />
+                    <p className="text-[9px] font-black uppercase text-muted-foreground">{isDragActive ? "Drop here" : "Click or drag to upload"}</p>
+                  </div>
                 </div>
                 {editProfileImage && (
                   <div className="flex justify-center p-4">
@@ -628,24 +711,24 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Hero Section</h3>
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest">Hero Title</Label>
-                    <Textarea 
-                      value={heroTitle} 
-                      onChange={(e) => setHeroTitle(e.target.value)} 
-                      className="min-h-[100px] rounded-2xl bg-black/40 border-border" 
-                      placeholder="e.g. REDMI 12 5G\nPOCO M6 PRO 5G"
-                    />
+                  <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Gradient Configuration</h3>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Enable Gradient Background</Label>
+                    <Switch checked={useGradient} onCheckedChange={setUseGradient} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest">Color 1</Label>
+                      <Input type="color" value={gradientColors.color1} onChange={(e) => setGradientColors({...gradientColors, color1: e.target.value})} className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest">Color 2</Label>
+                      <Input type="color" value={gradientColors.color2} onChange={(e) => setGradientColors({...gradientColors, color2: e.target.value})} className="h-10 w-full" />
+                    </div>
                   </div>
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest">Hero Subtitle</Label>
-                    <Textarea 
-                      value={heroSubtitle} 
-                      onChange={(e) => setHeroSubtitle(e.target.value)} 
-                      className="min-h-[150px] rounded-2xl bg-black/40 border-border" 
-                      placeholder="e.g. The definitive command center..."
-                    />
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Direction ({gradientDirection}°)</Label>
+                    <Slider value={[gradientDirection]} min={0} max={360} step={1} onValueChange={(val) => setGradientDirection(val[0])} />
                   </div>
                 </Card>
               </div>
@@ -738,6 +821,59 @@ export default function DashboardPage() {
               <div className="flex items-center gap-4"><CloudLightning className="w-8 h-8 text-blue-500" /><h2 className="text-3xl font-black uppercase">Telegram Synchronizer</h2></div>
               <Card className="p-8 rounded-[2rem] bg-muted/30 border-border space-y-6">
                 <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase">Telegram Channel URL</Label>
+                  <div className="flex gap-4">
+                    <Input 
+                      id="telegram-url"
+                      placeholder="https://t.me/s/yourchannel" 
+                      className="bg-black/20 border-border h-12 rounded-xl font-code text-[10px] flex-1" 
+                    />
+                    <Button 
+                      onClick={async () => {
+                        const url = (document.getElementById('telegram-url') as HTMLInputElement)?.value;
+                        if (!url) {
+                          toast({ variant: "destructive", title: "URL Required" });
+                          return;
+                        }
+                        try {
+                          toast({ title: "Syncing...", description: "Fetching posts from Telegram." });
+                          const res = await fetch('/api/telegram', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url })
+                          });
+                          const data = await res.json();
+                          if (data.error) throw new Error(data.error);
+                          
+                          setFetchedPosts(data.posts.filter((post: string) => post.trim().length > 10));
+                          toast({ title: "Sync Complete", description: `Fetched ${data.posts.length} posts.` });
+                        } catch (e: any) {
+                          toast({ variant: "destructive", title: "Sync Failed", description: e.message });
+                        }
+                      }}
+                      className="h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] px-8"
+                    >
+                      Sync Latest Posts
+                    </Button>
+                  </div>
+                </div>
+                {fetchedPosts.length > 0 && (
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <h3 className="text-sm font-black uppercase">Fetched Posts</h3>
+                    {fetchedPosts.map((post, index) => (
+                      <Card key={index} className="p-4 bg-black/20 border-border">
+                        <p className="text-xs text-muted-foreground mb-4">{post.substring(0, 100)}...</p>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button size="sm" className="text-[9px]" onClick={() => handleAddPost(post, 'tutorials')}>Add to Tutorials</Button>
+                          <Button size="sm" className="text-[9px]" onClick={() => handleAddPost(post, 'roms')}>Add to ROMs</Button>
+                          <Button size="sm" className="text-[9px]" onClick={() => handleAddPost(post, 'modules')}>Add to Modules</Button>
+                          <Button size="sm" className="text-[9px]" onClick={() => handleAddPost(post, 'tutorials')}>Add to Guides</Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+                <div className="space-y-4 pt-4 border-t border-border">
                   <Label className="text-[10px] font-black uppercase">Webhook Endpoint (Vercel)</Label>
                   <div className="relative">
                     <Input readOnly value={vercelWebhookUrl} className="bg-black/20 border-border h-12 rounded-xl font-code text-[10px] pr-12 text-blue-400" />
@@ -789,7 +925,7 @@ export default function DashboardPage() {
                         </Select>
                       </div>
 
-                      {u.role === 'developer' && (
+                      {(u.role === 'developer' || u.role === 'admin') && (
                         <div className="flex flex-wrap gap-2">
                           {[
                             { id: 'canManageRoms', label: 'ROMs' },
@@ -797,6 +933,9 @@ export default function DashboardPage() {
                             { id: 'canManageApks', label: 'APKs' },
                             { id: 'canManageWallpapers', label: 'Walls' },
                             { id: 'canManageGuides', label: 'Guides' },
+                            { id: 'canPromoteToAdmin', label: 'Promote Admin' },
+                            { id: 'canPromoteToDeveloper', label: 'Promote Dev' },
+                            { id: 'canManageUsers', label: 'Manage Users' },
                           ].map((perm) => (
                             <div key={perm.id} className="flex items-center gap-2 bg-black/10 px-3 py-1.5 rounded-lg border border-border/50">
                               <Label className="text-[7px] font-black uppercase text-muted-foreground">{perm.label}</Label>
@@ -804,6 +943,7 @@ export default function DashboardPage() {
                                 className="scale-75 data-[state=checked]:bg-primary"
                                 checked={!!u[perm.id]} 
                                 onCheckedChange={(checked) => updateDocumentNonBlocking(doc(db, 'users', u.id), { [perm.id]: checked })} 
+                                disabled={!isSuperAdmin && !(isAdminRole && profile?.canManageUsers)}
                               />
                             </div>
                           ))}
@@ -854,6 +994,9 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 self-end sm:self-center">
+                      <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); setIsEditDialogOpen(true); }} className="text-primary hover:bg-primary/10 rounded-xl">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(activeTab === 'guides' ? 'tutorials' : activeTab === 'root' ? 'root-packages' : activeTab, item.id)} className="text-red-600 hover:bg-red-600/10 rounded-xl">
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -866,49 +1009,54 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
-        <DialogContent className="bg-card rounded-[2.5rem] p-8 max-w-2xl border-border">
-          <DialogHeader><DialogTitle className="uppercase font-black">Bulk Sync Terminal</DialogTitle></DialogHeader>
-          <Tabs defaultValue="telegram" className="mt-4">
-            <TabsList className="grid w-full grid-cols-2 h-12 mb-6 bg-muted p-1">
-              <TabsTrigger value="telegram" className="text-[9px] uppercase font-black">Telegram AI Extraction</TabsTrigger>
-              <TabsTrigger value="links" className="text-[9px] uppercase font-black">Link Series Sync</TabsTrigger>
-            </TabsList>
-            <TabsContent value="telegram" className="space-y-6">
-              <Textarea value={bulkTelegramText} onChange={(e) => setBulkTelegramText(e.target.value)} placeholder="PASTE TELEGRAM BROADCAST CONTENT..." className="bg-muted min-h-[250px] rounded-2xl p-6 text-[10px] font-code" />
-              <Button onClick={handleBulkExtract} disabled={isExtracting} className="w-full h-12 bg-blue-600 text-white uppercase text-[10px] font-black tracking-widest rounded-xl">
-                {isExtracting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Analyze Transmission'}
-              </Button>
-              {extractedItems.length > 0 && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 max-h-[200px] overflow-y-auto">
-                    <p className="text-[8px] font-black uppercase text-blue-400 mb-2">Detected Protocols:</p>
-                    {extractedItems.map((item, idx) => (
-                      <div key={idx} className="text-[9px] text-muted-foreground uppercase mb-1">• {item.name} ({item.androidVersion || 'N/A'})</div>
-                    ))}
-                  </div>
-                  <Button onClick={handleSaveBulk} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Sync {extractedItems.length} Resources</Button>
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent value="links" className="space-y-6">
-              <Textarea value={bulkLinksText} onChange={(e) => setBulkLinksText(e.target.value)} placeholder="PASTE ONE LINK PER LINE FOR AUTO-SCANNING..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
-              <Button onClick={handleBulkLinkSync} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Initialize Link Sync Series</Button>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="bg-card rounded-[2.5rem] p-8 max-h-[90vh] overflow-y-auto border-border">
           <DialogHeader>
-            <DialogTitle className="uppercase font-black">Initialize Resource Protocol</DialogTitle>
+            <DialogTitle className="uppercase font-black">Add New {menuItems.find(i => i.id === activeTab)?.label}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAddResource} className="space-y-4 mt-4">
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setIsAdding(true);
+            const formData = new FormData(e.currentTarget);
+            const collectionName = activeTab === 'guides' ? 'tutorials' : activeTab === 'root' ? 'root-packages' : activeTab;
+            try {
+              const collRef = collection(db, collectionName);
+              const newDocRef = doc(collRef);
+              const data: any = { id: newDocRef.id, createdAt: serverTimestamp(), developer: profile?.username || 'Admin' };
+              formData.forEach((value, key) => {
+                if (key === 'mirrors' || key === 'screenshots' || key === 'steps') {
+                  data[key] = (value as string).split('\n').filter(Boolean);
+                } else {
+                  data[key] = value;
+                }
+              });
+              await setDoc(newDocRef, data);
+              setIsAddDialogOpen(false);
+              toast({ title: "Resource Added", description: "The registry has been updated." });
+            } catch (e) { toast({ variant: "destructive", title: "Failed to add resource." }); }
+            finally { setIsAdding(false); }
+          }} className="space-y-4 mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-[9px] font-black uppercase ml-1">Identity Name</Label>
-                <Input name={activeTab === 'guides' ? 'title' : 'name'} placeholder="E.g. Project Sky 3.0" required className="bg-muted rounded-xl h-12" />
+                <Input name={activeTab === 'guides' ? 'title' : 'name'} required className="bg-muted rounded-xl h-12" />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Telegram Channel Link</Label>
+                <Input name="telegramLink" placeholder="https://t.me/..." className="bg-muted rounded-xl h-12" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Discussion Channel Link</Label>
+                <Input name="discussionLink" placeholder="https://t.me/..." className="bg-muted rounded-xl h-12" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Payment Mode</Label>
+                <Input name="paymentMode" placeholder="E.g. Free, Paid, Donation" className="bg-muted rounded-xl h-12" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Main Developer Credit</Label>
+                <Input name="developerCredit" placeholder="E.g. Developer Name" className="bg-muted rounded-xl h-12" />
               </div>
               
               {activeTab === 'roms' && (
@@ -947,7 +1095,7 @@ export default function DashboardPage() {
 
             <div className="space-y-2">
               <Label className="text-[9px] font-black uppercase ml-1">{activeTab === 'guides' ? 'Tutorial Content' : 'Description Registry'}</Label>
-              <Textarea name={activeTab === 'guides' ? 'content' : 'description'} placeholder="Technical details or content..." required className="bg-muted min-h-[150px] rounded-2xl" />
+              <Textarea name={activeTab === 'guides' ? 'content' : 'description'} required className="bg-muted min-h-[150px] rounded-2xl" />
             </div>
 
             {activeTab === 'roms' && (
@@ -965,7 +1113,129 @@ export default function DashboardPage() {
             )}
 
             <Button type="submit" disabled={isAdding} className="w-full h-14 bg-primary text-primary-foreground font-black uppercase text-[10px] tracking-widest rounded-2xl mt-4">
-              {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : "Synchronize with Global Registry"}
+              {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : "Add to Global Registry"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
+        <DialogContent className="bg-card rounded-[2.5rem] p-8 max-w-2xl border-border">
+          <DialogHeader><DialogTitle className="uppercase font-black">Bulk Sync Terminal</DialogTitle></DialogHeader>
+          <Tabs defaultValue="telegram" className="mt-4">
+            <TabsList className="grid w-full grid-cols-2 h-12 mb-6 bg-muted p-1">
+              <TabsTrigger value="telegram" className="text-[9px] uppercase font-black">Telegram AI Extraction</TabsTrigger>
+              <TabsTrigger value="links" className="text-[9px] uppercase font-black">Link Series Sync</TabsTrigger>
+            </TabsList>
+            <TabsContent value="telegram" className="space-y-6">
+              <Textarea value={bulkTelegramText} onChange={(e) => setBulkTelegramText(e.target.value)} placeholder="PASTE TELEGRAM BROADCAST CONTENT..." className="bg-muted min-h-[250px] rounded-2xl p-6 text-[10px] font-code" />
+              <Button onClick={handleBulkExtract} disabled={isExtracting} className="w-full h-12 bg-blue-600 text-white uppercase text-[10px] font-black tracking-widest rounded-xl">
+                {isExtracting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Analyze Transmission'}
+              </Button>
+              {extractedItems.length > 0 && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 max-h-[200px] overflow-y-auto">
+                    <p className="text-[8px] font-black uppercase text-blue-400 mb-2">Detected Protocols:</p>
+                    {extractedItems.map((item, idx) => (
+                      <div key={idx} className="text-[9px] text-muted-foreground uppercase mb-1">• {item.name} ({item.androidVersion || 'N/A'})</div>
+                    ))}
+                  </div>
+                  <Button onClick={handleSaveBulk} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Sync {extractedItems.length} Resources</Button>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="links" className="space-y-6">
+              <Textarea value={bulkLinksText} onChange={(e) => setBulkLinksText(e.target.value)} placeholder="PASTE ONE LINK PER LINE FOR AUTO-SCANNING..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
+              <Button onClick={handleBulkLinkSync} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Initialize Link Sync Series</Button>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="bg-card rounded-[2.5rem] p-8 max-h-[90vh] overflow-y-auto border-border">
+          <DialogHeader>
+            <DialogTitle className="uppercase font-black">Edit Resource Protocol</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditResource} className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Identity Name</Label>
+                <Input name={activeTab === 'guides' ? 'title' : 'name'} defaultValue={editingItem?.name || editingItem?.title} required className="bg-muted rounded-xl h-12" />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Telegram Channel Link</Label>
+                <Input name="telegramLink" defaultValue={editingItem?.telegramLink} placeholder="https://t.me/..." className="bg-muted rounded-xl h-12" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Discussion Channel Link</Label>
+                <Input name="discussionLink" defaultValue={editingItem?.discussionLink} placeholder="https://t.me/..." className="bg-muted rounded-xl h-12" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Payment Mode</Label>
+                <Input name="paymentMode" defaultValue={editingItem?.paymentMode} placeholder="E.g. Free, Paid, Donation" className="bg-muted rounded-xl h-12" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Main Developer Credit</Label>
+                <Input name="developerCredit" defaultValue={editingItem?.developerCredit} placeholder="E.g. Developer Name" className="bg-muted rounded-xl h-12" />
+              </div>
+              
+              {activeTab === 'roms' && (
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase ml-1">Android Version</Label>
+                  <Input name="androidVersion" defaultValue={editingItem?.androidVersion} placeholder="E.g. 15" className="bg-muted rounded-xl h-12" />
+                </div>
+              )}
+
+              {activeTab === 'guides' && (
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase ml-1">Category</Label>
+                  <Input name="category" defaultValue={editingItem?.category} placeholder="E.g. Technical" className="bg-muted rounded-xl h-12" />
+                </div>
+              )}
+
+              {activeTab !== 'guides' && (
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase ml-1">Registry Download URL</Label>
+                  <Input name="downloadUrl" defaultValue={editingItem?.downloadUrl} placeholder="Direct or Mirror Link" className="bg-muted rounded-xl h-12" />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Visual Preview URL</Label>
+                <Input name="imageUrl" defaultValue={editingItem?.imageUrl} placeholder="HTTPS Asset Link" className="bg-muted rounded-xl h-12" />
+              </div>
+
+              {(activeTab === 'roms' || activeTab === 'wallpapers' || activeTab === 'live-wallpapers') && (
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase ml-1">Category / Tag</Label>
+                  <Input name="category" defaultValue={editingItem?.category} placeholder="E.g. AOSP, Nature, 60fps" className="bg-muted rounded-xl h-12" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[9px] font-black uppercase ml-1">{activeTab === 'guides' ? 'Tutorial Content' : 'Description Registry'}</Label>
+              <Textarea name={activeTab === 'guides' ? 'content' : 'description'} defaultValue={editingItem?.description || editingItem?.content} required className="bg-muted min-h-[150px] rounded-2xl" />
+            </div>
+
+            {activeTab === 'roms' && (
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">System Screenshots (One URL per line)</Label>
+                <Textarea name="screenshots" defaultValue={editingItem?.screenshots?.join('\n')} placeholder="Mirror URL 1\nMirror URL 2" className="bg-muted min-h-[100px] rounded-2xl" />
+              </div>
+            )}
+
+            {activeTab === 'root' && (
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase ml-1">Installation Protocols (One per line)</Label>
+                <Textarea name="steps" defaultValue={editingItem?.steps?.join('\n')} placeholder="1. Flash via Recovery\n2. Wipe Cache" className="bg-muted min-h-[100px] rounded-2xl" />
+              </div>
+            )}
+
+            <Button type="submit" disabled={isAdding} className="w-full h-14 bg-primary text-primary-foreground font-black uppercase text-[10px] tracking-widest rounded-2xl mt-4">
+              {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : "Update Global Registry"}
             </Button>
           </form>
         </DialogContent>

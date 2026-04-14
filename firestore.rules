@@ -113,6 +113,15 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /posts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /userActivity/{activityId} {
+      allow create: if isSignedIn();
+    }
+
     // OTP Codes: Allow server actions to write and client to read for verification
     match /otp_codes/{email} {
       allow read, write: if true;

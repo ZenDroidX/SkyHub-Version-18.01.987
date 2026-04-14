@@ -7,8 +7,8 @@ import { ROMGrid, ModuleGrid, GuideGrid, RequestROM, RootGrid, ModApkGrid, Custo
 import { Wallpapers } from '@/components/sections/wallpapers';
 import { Slideshow } from '@/components/sections/slideshow';
 import { Footer } from '@/components/sections/footer';
-import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection, useMemoFirebase, useFirestore, useDoc } from '@/firebase';
+import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 const sectionVariants = {
@@ -32,6 +32,7 @@ export default function Home() {
   const rootPackagesQuery = useMemoFirebase(() => query(collection(db, 'root-packages'), orderBy('createdAt', 'desc')), [db]);
   const navLinksQuery = useMemoFirebase(() => query(collection(db, 'navigation-links'), orderBy('order', 'asc')), [db]);
   const customResourcesQuery = useMemoFirebase(() => query(collection(db, 'custom-resources'), orderBy('createdAt', 'desc')), [db]);
+  const globalSettingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
 
   const { data: roms, isLoading: romsLoading } = useCollection(romsQuery);
   const { data: modules, isLoading: modulesLoading } = useCollection(modulesQuery);
@@ -42,74 +43,73 @@ export default function Home() {
   const { data: rootPackages, isLoading: rootLoading } = useCollection(rootPackagesQuery);
   const { data: customLinks } = useCollection(navLinksQuery);
   const { data: customResources, isLoading: customLoading } = useCollection(customResourcesQuery);
+  const { data: globalSettings } = useDoc(globalSettingsRef);
+
+  const defaultLayout = [
+    { id: 'slideshow', order: 0, visible: true },
+    { id: 'hero', order: 1, visible: true },
+    { id: 'roms', order: 2, visible: true, columns: 3, gap: 4 },
+    { id: 'modules', order: 3, visible: true, columns: 3, gap: 4 },
+    { id: 'apks', order: 4, visible: true, columns: 3, gap: 4 },
+    { id: 'root', order: 5, visible: true, columns: 3, gap: 4 },
+    { id: 'guides', order: 6, visible: true, columns: 3, gap: 4 },
+    { id: 'liveWallpapers', order: 7, visible: true, columns: 3, gap: 4 },
+    { id: 'wallpapers', order: 8, visible: true, columns: 3, gap: 4 },
+  ];
+
+  // Fallback to default layout if globalSettings or layoutConfig is missing
+  const layout = globalSettings?.layoutConfig || defaultLayout;
+  const sortedLayout = [...layout].sort((a, b) => a.order - b.order);
 
   const contentSections = customLinks?.filter(link => link.type === 'section') || [];
 
+  const renderSection = (section: any) => {
+    if (!section.visible) return null;
+    
+    switch (section.id) {
+      case 'slideshow': return <Slideshow slideshowImages={globalSettings?.slideshowImages || []} />;
+      case 'hero': return <Hero />;
+      case 'roms': return <ROMGrid roms={roms || []} isLoading={romsLoading} />;
+      case 'modules': return <ModuleGrid modules={modules || []} isLoading={modulesLoading} />;
+      case 'apks': return <ModApkGrid apks={apks || []} isLoading={apksLoading} />;
+      case 'root': return <RootGrid packages={rootPackages || []} isLoading={rootLoading} />;
+      case 'guides': return (
+        <section id="guides" className="max-w-7xl mx-auto px-6 py-24">
+          <div className="grid lg:grid-cols-3 gap-16">
+            <div className="lg:col-span-2"><GuideGrid guides={guides || []} isLoading={guidesLoading} /></div>
+            <RequestROM />
+          </div>
+        </section>
+      );
+      case 'liveWallpapers': return <LiveWallpaperGrid wallpapers={liveWallpapers || []} isLoading={liveLoading} />;
+      case 'wallpapers': return <Wallpapers wallpapers={wallpapers || []} isLoading={wallpapersLoading} />;
+      default: return null;
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-background relative overflow-hidden">
+    <main className="min-h-screen relative overflow-hidden">
       <Navbar />
       
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-        >
-          <Slideshow wallpapers={wallpapers || []} />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}>
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}>
+          <div className="space-y-16 pb-32">
+            {sortedLayout.map(section => (
+              <motion.div key={section.id} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
+                {renderSection(section)}
+              </motion.div>
+            ))}
+            {contentSections.map((section, idx) => (
+              <motion.div key={section.id} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
+                <CustomGrid 
+                  section={section} 
+                  items={customResources?.filter(item => item.sectionId === section.id) || []} 
+                  isLoading={customLoading}
+                />
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
-
-        <Hero />
-        
-        <div className="space-y-16 pb-32">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
-            <ROMGrid roms={roms || []} isLoading={romsLoading} />
-          </motion.div>
-          
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
-            <ModuleGrid modules={modules || []} isLoading={modulesLoading} />
-          </motion.div>
-
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
-            <ModApkGrid apks={apks || []} isLoading={apksLoading} />
-          </motion.div>
-
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
-            <RootGrid packages={rootPackages || []} isLoading={rootLoading} />
-          </motion.div>
-          
-          {contentSections.map((section, idx) => (
-            <motion.div key={section.id} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
-              <CustomGrid 
-                section={section} 
-                items={customResources?.filter(item => item.sectionId === section.id) || []} 
-                isLoading={customLoading}
-              />
-            </motion.div>
-          ))}
-
-          <section id="guides" className="max-w-7xl mx-auto px-6 py-24">
-            <div className="grid lg:grid-cols-3 gap-16">
-              <motion.div className="lg:col-span-2" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={sectionVariants}>
-                <GuideGrid guides={guides || []} isLoading={guidesLoading} />
-              </motion.div>
-              <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={sectionVariants}>
-                <RequestROM />
-              </motion.div>
-            </div>
-          </section>
-
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
-            <LiveWallpaperGrid wallpapers={liveWallpapers || []} isLoading={liveLoading} />
-          </motion.div>
-          
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
-            <Wallpapers wallpapers={wallpapers || []} isLoading={wallpapersLoading} />
-          </motion.div>
-        </div>
       </motion.div>
 
       <Footer />
