@@ -59,7 +59,14 @@ export default function Home() {
 
   // Fallback to default layout if globalSettings or layoutConfig is missing
   const layout = globalSettings?.layoutConfig || defaultLayout;
-  const sortedLayout = [...layout].sort((a, b) => a.order - b.order);
+  
+  // Ensure all default sections are present
+  const mergedLayout = defaultLayout.map(defaultSection => {
+    const customSection = layout.find((s: any) => s.id === defaultSection.id);
+    return customSection || defaultSection;
+  });
+  
+  const sortedLayout = [...mergedLayout].sort((a, b) => a.order - b.order);
 
   const contentSections = customLinks?.filter(link => link.type === 'section') || [];
 
