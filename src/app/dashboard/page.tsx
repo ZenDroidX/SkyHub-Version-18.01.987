@@ -193,8 +193,8 @@ export default function DashboardPage() {
   const [brandName, setBrandName] = useState('');
   const [heroTitle, setHeroTitle] = useState('');
   const [heroSubtitle, setHeroSubtitle] = useState('');
-  const [faviconFile, setFaviconFile] = useState<File | null>(null);
-  const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
+  const [faviconUrl, setFaviconUrl] = useState('');
+  const [slideshowRounding, setSlideshowRounding] = useState(2); // 2rem default
   const [isSavingLayout, setIsSavingLayout] = useState(false);
 
   const { user: currentUser } = useUser();
@@ -228,6 +228,8 @@ export default function DashboardPage() {
       setBrandName(globalSettings.brandName || '');
       setHeroTitle(globalSettings.heroTitle || '');
       setHeroSubtitle(globalSettings.heroSubtitle || '');
+      setFaviconUrl(globalSettings.faviconUrl || '');
+      setSlideshowRounding(globalSettings.slideshowRounding ?? 2);
     }
   }, [globalSettings]);
 
@@ -330,20 +332,13 @@ export default function DashboardPage() {
   const handleSaveProfile = async () => {
     if (!currentUser) return;
     setIsSavingProfile(true);
-    let imageUrl = editProfileImage;
     try {
-      if (profileImageFile) {
-        const storageRef = ref(storage, `users/${currentUser.uid}/profile.jpg`);
-        await uploadBytes(storageRef, profileImageFile);
-        imageUrl = await getDownloadURL(storageRef);
-      }
       await updateDocumentNonBlocking(doc(db, 'users', currentUser.uid), {
         username: editUsername,
-        profileImageUrl: imageUrl
+        profileImageUrl: editProfileImage
       });
       await logActivity(db, currentUser.uid, 'Updated profile');
       toast({ title: "Profile updated successfully" });
-      setProfileImageFile(null);
     } catch (error) {
       console.error(error);
       toast({ title: "Failed to update profile", variant: "destructive" });
@@ -366,24 +361,17 @@ export default function DashboardPage() {
     if (!isSuperAdmin) return;
     setIsSavingLayout(true);
     try {
-      let faviconUrl = globalSettings?.faviconUrl;
-      if (faviconFile) {
-        const storageRef = ref(storage, 'branding/favicon');
-        await uploadBytes(storageRef, faviconFile);
-        faviconUrl = await getDownloadURL(storageRef);
-      }
-      
       await setDoc(doc(db, 'settings', 'global'), {
         siteName,
         brandName,
         heroTitle,
         heroSubtitle,
         gradient: useGradient ? { colors: gradientColors, direction: gradientDirection } : null,
-        ...(faviconUrl && { faviconUrl })
+        faviconUrl,
+        slideshowRounding
       }, { merge: true });
       
       toast({ title: "Layout Settings Updated", description: "Global layout synchronized successfully." });
-      setFaviconFile(null);
     } catch (error: any) {
       console.error(error);
       toast({ title: "Failed to update layout", description: error.message, variant: "destructive" });
@@ -419,7 +407,7 @@ export default function DashboardPage() {
       }
       setExtractedItems([]);
       setIsBulkDialogOpen(false);
-      toast({ title: "Bulk Sync Successful", description: `${extractedItems.length} resources added.` });
+      toast({ title: "Bulk Sync Successful", description: `${extractedItems.length} images have been added to the site.` });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Sync Failed", description: e.message });
     } finally {
@@ -600,7 +588,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-nowrap gap-2 overflow-x-auto pb-4 scrollbar-hide">
           {menuItems.map((item) => (
             <motion.button
               key={item.id}
@@ -608,7 +596,7 @@ export default function DashboardPage() {
               whileTap={{ scale: 0.95, y: -5, boxShadow: "0 0 20px 5px rgba(255, 255, 255, 0.5)" }}
               onClick={() => setActiveTab(item.id)}
               className={cn(
-                "flex items-center justify-center gap-3 px-6 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border flex-1 min-w-[140px]",
+                "flex items-center justify-center gap-3 px-6 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border shrink-0 w-[160px]",
                 activeTab === item.id 
                   ? "bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(255,255,255,0.3)]" 
                   : "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground"
@@ -638,12 +626,13 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-widest">Profile Image</Label>
-                  <div {...getRootProps()} className={cn("h-32 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary/50 transition-all", isDragActive && "border-primary")}>
-                    <input {...getInputProps()} />
-                    <Upload className="w-8 h-8 text-muted-foreground" />
-                    <p className="text-[9px] font-black uppercase text-muted-foreground">{isDragActive ? "Drop here" : "Click or drag to upload"}</p>
-                  </div>
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Profile Image URL</Label>
+                  <Input 
+                    value={editProfileImage} 
+                    onChange={(e) => setEditProfileImage(e.target.value)} 
+                    className="h-14 rounded-2xl bg-black/40 border-border" 
+                    placeholder="Enter profile image URL"
+                  />
                 </div>
                 {editProfileImage && (
                   <div className="flex justify-center p-4">
@@ -668,6 +657,18 @@ export default function DashboardPage() {
                 <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6">
                   <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Site Configuration</h3>
                   <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">UI Scale</Label>
+                    <Slider 
+                      value={[100]} 
+                      min={80} 
+                      max={120} 
+                      step={1} 
+                      onValueChange={(val) => {
+                        document.documentElement.style.setProperty('--ui-scale', `${val[0] / 100}`);
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Site Name (Browser Title)</Label>
                     <Input 
                       value={siteName} 
@@ -686,28 +687,32 @@ export default function DashboardPage() {
                     />
                   </div>
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest">Upload Favicon (.ico, .png)</Label>
-                    <div className="relative group">
-                      <input 
-                        type="file" 
-                        accept=".ico,image/png,image/jpeg" 
-                        onChange={handleFaviconChange}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      />
-                      <div className="h-32 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center gap-3 group-hover:border-primary/50 transition-all">
-                        <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary" />
-                        <p className="text-[9px] font-black uppercase text-muted-foreground">Select Favicon Resource</p>
-                      </div>
-                    </div>
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Favicon URL</Label>
+                    <Input 
+                      value={faviconUrl} 
+                      onChange={(e) => setFaviconUrl(e.target.value)}
+                      className="h-14 rounded-2xl bg-black/40 border-border" 
+                      placeholder="Enter favicon URL"
+                    />
                   </div>
-                  {(faviconPreview || globalSettings?.faviconUrl) && (
+                  {faviconUrl && (
                     <div className="space-y-4">
                       <Label className="text-[10px] font-black uppercase tracking-widest">Favicon Preview</Label>
                       <div className="p-6 bg-black/40 rounded-2xl border border-border flex items-center justify-center">
-                        <img src={faviconPreview || globalSettings?.faviconUrl} className="w-12 h-12 object-contain" alt="Favicon Preview" />
+                        <img src={faviconUrl} className="w-12 h-12 object-contain" alt="Favicon Preview" />
                       </div>
                     </div>
                   )}
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Slideshow Image Rounding (rem)</Label>
+                    <Slider 
+                      value={[slideshowRounding]} 
+                      min={0} 
+                      max={4} 
+                      step={0.1} 
+                      onValueChange={(val) => setSlideshowRounding(val[0])}
+                    />
+                  </div>
                 </Card>
 
                 <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6">
@@ -1123,9 +1128,10 @@ export default function DashboardPage() {
         <DialogContent className="bg-card rounded-[2.5rem] p-8 max-w-2xl border-border">
           <DialogHeader><DialogTitle className="uppercase font-black">Bulk Sync Terminal</DialogTitle></DialogHeader>
           <Tabs defaultValue="telegram" className="mt-4">
-            <TabsList className="grid w-full grid-cols-2 h-12 mb-6 bg-muted p-1">
-              <TabsTrigger value="telegram" className="text-[9px] uppercase font-black">Telegram AI Extraction</TabsTrigger>
-              <TabsTrigger value="links" className="text-[9px] uppercase font-black">Link Series Sync</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 h-12 mb-6 bg-muted p-1">
+              <TabsTrigger value="telegram" className="text-[9px] uppercase font-black">Telegram AI</TabsTrigger>
+              <TabsTrigger value="links" className="text-[9px] uppercase font-black">Link Series</TabsTrigger>
+              <TabsTrigger value="bulk" className="text-[9px] uppercase font-black">Bulk Add</TabsTrigger>
             </TabsList>
             <TabsContent value="telegram" className="space-y-6">
               <Textarea value={bulkTelegramText} onChange={(e) => setBulkTelegramText(e.target.value)} placeholder="PASTE TELEGRAM BROADCAST CONTENT..." className="bg-muted min-h-[250px] rounded-2xl p-6 text-[10px] font-code" />
@@ -1147,6 +1153,10 @@ export default function DashboardPage() {
             <TabsContent value="links" className="space-y-6">
               <Textarea value={bulkLinksText} onChange={(e) => setBulkLinksText(e.target.value)} placeholder="PASTE ONE LINK PER LINE FOR AUTO-SCANNING..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
               <Button onClick={handleBulkLinkSync} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Initialize Link Sync Series</Button>
+            </TabsContent>
+            <TabsContent value="bulk" className="space-y-6">
+              <Textarea placeholder="PASTE LINKS (ONE PER LINE)..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
+              <Button className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Add to {menuItems.find(i => i.id === activeTab)?.label}</Button>
             </TabsContent>
           </Tabs>
         </DialogContent>

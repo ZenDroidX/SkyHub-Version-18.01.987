@@ -5,13 +5,13 @@ import React from 'react';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
 
-export function Slideshow({ slideshowImages }: { slideshowImages: any[] }) {
+export function Slideshow({ slideshowImages, rounding = 2 }: { slideshowImages: any[], rounding?: number }) {
   if (!slideshowImages || slideshowImages.length === 0) return null;
 
   return (
     <div className="relative w-full overflow-hidden py-10">
       <Carousel
-        opts={{ loop: true, align: "start" }}
+        opts={{ loop: true, align: "start", draggable: false }}
         plugins={[Autoplay({ delay: 3000, stopOnInteraction: false })]}
         className="w-full"
       >
@@ -22,8 +22,12 @@ export function Slideshow({ slideshowImages }: { slideshowImages: any[] }) {
                 <img 
                   src={img.url} 
                   alt={`Slideshow ${index}`} 
-                  className="w-full rounded-3xl shadow-xl border border-white/10" 
-                  style={{ height: img.size || '400px', objectFit: 'cover' }} 
+                  className="w-full shadow-xl border border-white/10" 
+                  style={{ 
+                    height: img.size || '400px', 
+                    objectFit: img.orientation || 'cover',
+                    borderRadius: `${rounding}rem`
+                  }} 
                 />
               </div>
             </CarouselItem>

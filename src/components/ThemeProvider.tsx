@@ -74,6 +74,8 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
           const stringValue = value as string;
           if (key === 'primary') {
             document.documentElement.style.setProperty('--primary', hexToHSL(stringValue));
+          } else if (key === 'textColor') {
+            document.documentElement.style.setProperty('--foreground', hexToHSL(stringValue));
           } else if (key === 'gradient') {
             document.documentElement.style.setProperty('--site-gradient', stringValue);
             document.documentElement.style.setProperty('--button-gradient', stringValue);

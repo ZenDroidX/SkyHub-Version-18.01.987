@@ -15,15 +15,18 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 
-const SortableItem = ({ id, config, onChange }: { id: string, config: any, onChange: (id: string, newConfig: any) => void }) => {
+  const SortableItem = ({ id, config, onChange }: { id: string, config: any, onChange: (id: string, newConfig: any) => void }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition };
 
   return (
     <div ref={setNodeRef} style={style} className="p-4 bg-card border rounded-xl flex items-center gap-4 mb-2">
       <div {...attributes} {...listeners} className="cursor-grab"><GripVertical className="w-5 h-5 text-muted-foreground" /></div>
-      <div className="flex-1 grid grid-cols-4 gap-4 items-center">
-        <Label className="font-black uppercase text-[10px]">{id}</Label>
+      <div className="flex-1 grid grid-cols-5 gap-4 items-center">
+        <div className="space-y-1">
+          <Label className="font-black uppercase text-[10px]">{id}</Label>
+          <Input className="h-8 text-[9px]" placeholder="Label" value={config.label || id} onChange={(e) => onChange(id, { ...config, label: e.target.value })} />
+        </div>
         <div className="flex items-center gap-2">
           <Switch checked={config.visible} onCheckedChange={(v) => onChange(id, { ...config, visible: v })} />
           <Label className="text-[9px]">Visible</Label>
@@ -35,6 +38,10 @@ const SortableItem = ({ id, config, onChange }: { id: string, config: any, onCha
         <div className="space-y-1">
           <Label className="text-[8px] uppercase">Gap: {config.gap || 4}</Label>
           <Slider value={[config.gap || 4]} min={0} max={10} step={1} onValueChange={([v]) => onChange(id, { ...config, gap: v })} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[8px] uppercase">Color</Label>
+          <Input type="color" className="h-8 w-full p-1" value={config.color || '#ffffff'} onChange={(e) => onChange(id, { ...config, color: e.target.value })} />
         </div>
       </div>
     </div>

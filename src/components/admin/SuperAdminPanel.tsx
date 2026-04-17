@@ -9,10 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import ThemeManager from './ThemeManager';
 import LayoutManager from './LayoutManager';
+import { Slideshow } from '@/components/sections/slideshow';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function SuperAdminPanel() {
@@ -114,16 +116,27 @@ export default function SuperAdminPanel() {
                     newImages[index].url = e.target.value;
                     setFormData({...formData, slideshowImages: newImages});
                   }} />
-                  <Input placeholder="Orientation" value={img.orientation} onChange={(e) => {
+                  <Select value={img.orientation || 'cover'} onValueChange={(val) => {
                     const newImages = [...formData.slideshowImages];
-                    newImages[index].orientation = e.target.value;
+                    newImages[index].orientation = val;
                     setFormData({...formData, slideshowImages: newImages});
-                  }} />
-                  <Input placeholder="Size" value={img.size} onChange={(e) => {
-                    const newImages = [...formData.slideshowImages];
-                    newImages[index].size = e.target.value;
-                    setFormData({...formData, slideshowImages: newImages});
-                  }} />
+                  }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Orientation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cover">Cover</SelectItem>
+                      <SelectItem value="contain">Contain</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <label>
+                    <span className="text-xs">Height (px):</span>
+                    <Input type="number" placeholder="400" value={img.size?.replace('px', '') || 400} onChange={(e) => {
+                      const newImages = [...formData.slideshowImages];
+                      newImages[index].size = `${e.target.value}px`;
+                      setFormData({...formData, slideshowImages: newImages});
+                    }} />
+                  </label>
                   <div className="flex gap-2">
                     {img.deleted ? (
                       <Button variant="outline" size="sm" onClick={() => {
@@ -141,8 +154,13 @@ export default function SuperAdminPanel() {
                   </div>
                 </div>
               ))}
-              <Button onClick={() => setFormData({...formData, slideshowImages: [...(formData.slideshowImages || []), {url: '', orientation: '', size: '', deleted: false}]})}>Add Image</Button>
+              <Button onClick={() => setFormData({...formData, slideshowImages: [...(formData.slideshowImages || []), {url: '', orientation: 'cover', size: '400px', deleted: false}]})}>Add Image</Button>
               <Button onClick={handleSave}>Save Changes</Button>
+              
+              <h4 className="text-lg font-bold mt-8">Preview</h4>
+              <div className="bg-muted p-4 rounded-xl">
+                 <Slideshow slideshowImages={formData.slideshowImages || []} />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

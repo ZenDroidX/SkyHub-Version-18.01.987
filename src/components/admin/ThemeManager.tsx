@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 
 export default function ThemeManager() {
   const [customPrimary, setCustomPrimary] = useState('#2563eb');
+  const [customTextColor, setCustomTextColor] = useState('#ffffff');
   const [gradientColors, setGradientColors] = useState(['#2563eb', '#1e40af']);
   const [gradientDirection, setGradientDirection] = useState(135);
   const [useGradient, setUseGradient] = useState(true);
@@ -48,6 +49,7 @@ export default function ThemeManager() {
     await applyTheme({
       name: 'Custom',
       primary: customPrimary,
+      textColor: customTextColor,
       gradient: useGradient ? customGradient : null,
       bg: customBg,
       fontFamily: customFont,
@@ -135,6 +137,13 @@ export default function ThemeManager() {
               <div className="flex gap-2">
                 <Input type="color" value={customPrimary} onChange={(e) => setCustomPrimary(e.target.value)} className="w-12 h-12 p-1" />
                 <Input type="text" value={customPrimary} onChange={(e) => setCustomPrimary(e.target.value)} className="flex-1" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Text Color</Label>
+              <div className="flex gap-2">
+                <Input type="color" value={customTextColor} onChange={(e) => setCustomTextColor(e.target.value)} className="w-12 h-12 p-1" />
+                <Input type="text" value={customTextColor} onChange={(e) => setCustomTextColor(e.target.value)} className="flex-1" />
               </div>
             </div>
             <div className="space-y-2">

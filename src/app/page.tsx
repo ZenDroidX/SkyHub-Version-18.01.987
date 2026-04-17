@@ -74,7 +74,7 @@ export default function Home() {
     if (!section.visible) return null;
     
     switch (section.id) {
-      case 'slideshow': return <Slideshow slideshowImages={globalSettings?.slideshowImages || []} />;
+      case 'slideshow': return <Slideshow slideshowImages={globalSettings?.slideshowImages || []} rounding={globalSettings?.slideshowRounding} />;
       case 'hero': return <Hero />;
       case 'roms': return <ROMGrid roms={roms || []} isLoading={romsLoading} />;
       case 'modules': return <ModuleGrid modules={modules || []} isLoading={modulesLoading} />;
