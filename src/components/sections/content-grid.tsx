@@ -195,33 +195,49 @@ export function ROMCard({ rom }: { rom: any }) {
 
   return (
     <motion.div layout variants={cardVariants} whileHover={{ y: -5 }}>
-      <Card className="group relative glass border-border overflow-hidden rounded-[3rem] p-0 flex flex-col h-full transition-all" style={{ background: rom.gradient || undefined }}>
-        <div className="relative aspect-video w-full overflow-hidden bg-background/50">
-          <img src={rom.imageUrl || `https://picsum.photos/seed/${rom.id}/800/600`} alt={rom.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all" />
-          <div className="absolute top-6 left-6 flex flex-col gap-2">
-            <Badge variant="outline" className="text-[9px] font-black bg-background/80 backdrop-blur-md border-border uppercase tracking-widest text-blue-600 px-4 py-1.5 rounded-xl">
-              ANDROID {rom.androidVersion || '14'}
-            </Badge>
-            <Badge variant="secondary" className="text-[9px] font-black bg-background/80 backdrop-blur-md border-border uppercase tracking-widest text-muted-foreground px-4 py-1.5 rounded-xl">
-              {rom.downloadCount || 0} DOWNLOADS
-            </Badge>
+      <Card 
+        className="group relative border border-border/50 overflow-hidden rounded-[3rem] p-0 flex flex-col h-full bg-card shadow-lg hover:shadow-2xl transition-all duration-300"
+        style={{ 
+          background: rom.gradient ? rom.gradient : "var(--card)",
+        }}
+      >
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-background/50">
+          <img 
+            src={rom.imageUrl || `https://picsum.photos/seed/${rom.id}/800/600`} 
+            alt={rom.name} 
+            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-500 scale-105 group-hover:scale-100" 
+          />
+          <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+             <div className="flex gap-2">
+                <Badge variant="outline" className="text-[9px] font-black bg-black/40 backdrop-blur-sm border-white/10 uppercase tracking-widest text-white px-3 py-1 rounded-full">
+                  ANDROID {rom.androidVersion || '14'}
+                </Badge>
+                <Badge variant="secondary" className="text-[9px] font-black bg-black/40 backdrop-blur-sm border-white/10 uppercase tracking-widest text-white px-3 py-1 rounded-full">
+                  {rom.downloadCount || 0} DOWNLOADS
+                </Badge>
+             </div>
           </div>
         </div>
         
-        <div className="p-10 flex flex-col flex-1">
+        <div className="p-8 flex flex-col flex-1">
           <h3 className="text-2xl font-black uppercase mb-4 tracking-tight text-foreground">{rom.name}</h3>
-          <div className={cn("text-sm text-muted-foreground transition-all duration-300 whitespace-pre-wrap", !isExpanded ? "line-clamp-3 mb-8" : "mb-8")}>
+          
+          <div className={cn(
+            "text-sm text-foreground/70 transition-all duration-300 whitespace-pre-wrap leading-relaxed flex-1", 
+            !isExpanded ? "line-clamp-3 mb-6" : "mb-6"
+          )}>
             {parseLinks(rom.description)}
+          </div>
             <AnimatePresence>
               {isExpanded && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-6 pt-6 border-t border-border space-y-8">
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-8 pt-8 border-t border-white/10 space-y-8">
                   {hasScreenshots && (
                     <div className="space-y-4">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-primary">SYSTEM SCREENSHOTS</p>
-                      <ScrollArea className="w-full whitespace-nowrap rounded-[2rem] border border-border bg-muted/20 p-6">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary/80">System Screenshots</p>
+                      <ScrollArea className="w-full whitespace-nowrap rounded-3xl border border-white/10 bg-black/20 p-6">
                         <div className="flex gap-4">
                           {screenshots?.map((src: string, idx: number) => (
-                            <div key={idx} className="relative w-48 aspect-[9/16] shrink-0 rounded-2xl overflow-hidden border border-border cursor-pointer" onClick={() => { setSelectedImage(src); setIsPreviewOpen(true); }}>
+                            <div key={idx} className="relative w-56 aspect-[9/16] shrink-0 rounded-3xl overflow-hidden border border-white/10 cursor-pointer hover:scale-[1.02] transition-transform" onClick={() => { setSelectedImage(src); setIsPreviewOpen(true); }}>
                               <img src={src} className="w-full h-full object-cover" alt="SC" />
                             </div>
                           ))}
@@ -231,8 +247,8 @@ export function ROMCard({ rom }: { rom: any }) {
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-2">
-                    <Button variant="outline" onClick={() => initiateDownload(db, 'roms', rom.id, rom.downloadUrl, rom.name)} className="w-full h-10 justify-start px-4 rounded-xl border-border bg-muted/30 text-[9px] font-black uppercase gap-3">
-                      <LinkIcon className="w-3 h-3" /> Primary Mirror
+                    <Button variant="outline" onClick={() => initiateDownload(db, 'roms', rom.id, rom.downloadUrl, rom.name)} className="w-full h-12 justify-start px-6 rounded-2xl border-white/10 bg-white/5 text-[10px] font-black uppercase gap-4 hover:bg-white/10">
+                      <LinkIcon className="w-4 h-4" /> Primary Acquisition Protocol
                     </Button>
                   </div>
                 </motion.div>
@@ -240,21 +256,23 @@ export function ROMCard({ rom }: { rom: any }) {
             </AnimatePresence>
           </div>
 
-          <div className="mt-auto flex gap-3">
-            <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
-              <Button onClick={() => initiateDownload(db, 'roms', rom.id, rom.downloadUrl, rom.name)} className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-black uppercase text-[10px] tracking-widest">
-                <Download className="w-4 h-4 mr-2" /> Download
-              </Button>
-            </motion.div>
-            <motion.div whileTap={{ scale: 0.95 }}>
-              <Button variant="outline" onClick={() => setIsExpanded(!isExpanded)} className={cn("h-14 w-14 rounded-2xl border-border", isExpanded && "bg-primary text-white")}>
-                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <Info className="w-5 h-5" />}
-              </Button>
-            </motion.div>
+           <div className="mt-auto space-y-3">
+             <Button 
+                variant="outline" 
+                onClick={() => setIsExpanded(!isExpanded)} 
+                className="w-full h-10 rounded-full border border-border bg-background/50 text-[10px] uppercase font-bold tracking-widest hover:bg-muted"
+             >
+               {isExpanded ? 'Show Less' : 'Read Details'}
+             </Button>
+             <Button 
+                onClick={() => initiateDownload(db, 'roms', rom.id, rom.downloadUrl, rom.name)} 
+                className="w-full h-12 rounded-full bg-primary text-primary-foreground font-black uppercase text-[11px] tracking-widest shadow-md hover:scale-[1.02] active:scale-[0.98] transition-transform"
+             >
+               Download ROM
+             </Button>
           </div>
-        </div>
-
-        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+      </Card>
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
           <DialogContent className="max-w-[100vw] w-screen h-screen p-0 border-none bg-black/95 backdrop-blur-3xl overflow-hidden rounded-none shadow-none flex flex-col">
             <div className="relative flex-1 w-full flex items-center justify-center p-4">
               <img src={selectedImage || ''} className="max-w-full max-h-full object-contain rounded-2xl" alt="Preview" />
@@ -264,10 +282,9 @@ export function ROMCard({ rom }: { rom: any }) {
             </div>
           </DialogContent>
         </Dialog>
-      </Card>
-    </motion.div>
-  );
-}
+      </motion.div>
+    );
+  }
 
 export function ROMGrid({ roms, isLoading }: { roms: any[], isLoading: boolean }) {
   const { searchQuery } = useSearch();

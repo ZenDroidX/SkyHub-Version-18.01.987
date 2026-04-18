@@ -14,6 +14,7 @@ import { doc } from 'firebase/firestore';
 import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
 import ThemeProvider from '@/components/ThemeProvider';
 import { SearchProvider } from '@/context/SearchContext';
+import { NotificationProvider } from '@/components/NotificationProvider';
 
 function RootContent({ children }: { children: React.ReactNode }) {
   const db = useFirestore();
@@ -115,9 +116,11 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <SearchProvider>
             <ThemeProvider>
-              <RootContent>
-                {children}
-              </RootContent>
+              <NotificationProvider>
+                <RootContent>
+                  {children}
+                </RootContent>
+              </NotificationProvider>
             </ThemeProvider>
           </SearchProvider>
           <Toaster />

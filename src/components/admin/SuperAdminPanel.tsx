@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { Palette } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { useNotifications } from '@/components/NotificationProvider';
 import { cn } from '@/lib/utils';
 import ThemeManager from './ThemeManager';
 import LayoutManager from './LayoutManager';
@@ -18,6 +19,7 @@ import { Slideshow } from '@/components/sections/slideshow';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function SuperAdminPanel() {
+  const { addNotification } = useNotifications();
   const db = useFirestore();
   const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc(settingsRef);
@@ -46,6 +48,26 @@ export default function SuperAdminPanel() {
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  const [notificationsQuery] = useMemoFirebase(() => [query(collection(db, 'notifications'), orderBy('createdAt', 'desc'))], [db]);
+  const { data: notifications } = useCollection(notificationsQuery[0]);
+  const [panelLayout, setPanelLayout] = useState<'grid' | 'list'>('grid');
+  const [newNotificationMessage, setNewNotificationMessage] = useState('');
+  const [newNotificationDuration, setNewNotificationDuration] = useState('5');
+
+  const handleAddNotification = async (message: string, durationStr: string) => {
+    if (!message) return;
+    const duration = parseInt(durationStr) * 1000;
+    await addDoc(collection(db, 'notifications'), { message, createdAt: serverTimestamp() });
+    addNotification(message, duration);
+    setNewNotificationMessage('');
+  };
+  const handleDeleteNotification = async (id: string) => {
+    await deleteDoc(doc(db, 'notifications', id));
+  };
+  const handleUpdateNotification = async (id: string, message: string) => {
+    await updateDoc(doc(db, 'notifications', id), { message });
   };
 
   const handleAddPost = async (content: string, index: number) => {
@@ -82,13 +104,18 @@ export default function SuperAdminPanel() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <Palette className="w-8 h-8 text-primary" />
-        <h2 className="text-3xl font-black uppercase">Super Admin Panel</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Palette className="w-8 h-8 text-primary" />
+          <h2 className="text-3xl font-black uppercase">Super Admin Panel</h2>
+        </div>
+        <Button variant="outline" onClick={() => setPanelLayout(prev => prev === 'grid' ? 'list' : 'grid')}>
+          Switch to {panelLayout === 'grid' ? 'List' : 'Grid'} Layout
+        </Button>
       </div>
       
       <Tabs defaultValue="theme" className="w-full">
-        <TabsList>
+        <TabsList className="flex flex-nowrap overflow-x-auto w-full justify-start pb-2 mb-4 scrollbar-hide">
           <TabsTrigger value="theme">Theme</TabsTrigger>
           <TabsTrigger value="slideshow">Slideshow</TabsTrigger>
           <TabsTrigger value="support">Support Links</TabsTrigger>
@@ -202,23 +229,37 @@ export default function SuperAdminPanel() {
         <TabsContent value="notifications">
           <Card>
             <CardHeader><CardTitle>Notifications</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              {formData.notifications?.map((notif: any, index: number) => (
-                <div key={index} className="grid grid-cols-2 gap-2 p-4 border rounded-lg">
-                  <Input placeholder="Message" value={notif.message} onChange={(e) => {
-                    const newNotifs = [...formData.notifications];
-                    newNotifs[index].message = e.target.value;
-                    setFormData({...formData, notifications: newNotifs});
-                  }} />
-                  <Input type="datetime-local" value={notif.scheduledTime} onChange={(e) => {
-                    const newNotifs = [...formData.notifications];
-                    newNotifs[index].scheduledTime = e.target.value;
-                    setFormData({...formData, notifications: newNotifs});
-                  }} />
+            <CardContent className={cn("space-y-4", panelLayout === 'grid' && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4")}>
+              {notifications?.map((notif: any) => (
+                <div key={notif.id} className="flex flex-col gap-3 p-5 border border-border bg-card rounded-2xl shadow-sm">
+                  <Input 
+                    value={notif.message} 
+                    onChange={(e) => handleUpdateNotification(notif.id, e.target.value)} 
+                    className="w-full"
+                  />
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleDeleteNotification(notif.id)}
+                    className="w-full font-bold uppercase tracking-wider text-xs"
+                  >
+                    Delete Notification
+                  </Button>
                 </div>
               ))}
-              <Button onClick={() => setFormData({...formData, notifications: [...(formData.notifications || []), {message: '', scheduledTime: ''}]})}>Add Notification</Button>
-              <Button onClick={handleSave}>Save Changes</Button>
+              <div className="flex flex-col gap-2 p-5 border border-dashed border-primary/50 rounded-2xl">
+                <Input 
+                  placeholder="Enter custom notification message..." 
+                  value={newNotificationMessage}
+                  onChange={(e) => setNewNotificationMessage(e.target.value)}
+                />
+                <Input 
+                  type="number"
+                  placeholder="Duration (seconds)..." 
+                  value={newNotificationDuration}
+                  onChange={(e) => setNewNotificationDuration(e.target.value)}
+                />
+                <Button onClick={() => handleAddNotification(newNotificationMessage, newNotificationDuration)}>Add Custom Notification</Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

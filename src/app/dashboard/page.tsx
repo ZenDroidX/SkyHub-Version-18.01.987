@@ -98,6 +98,7 @@ import { ToastAction } from '@/components/ui/toast';
 import { DEFAULT_DONATION_CONFIG, StormConfig } from '@/lib/store';
 import { themes } from '@/lib/themes';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { MessageHistory } from '@/components/admin/MessageHistory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { extractRoms, extractRomsFromRawHtml } from '@/ai/flows/extract-roms-flow';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -253,6 +254,7 @@ export default function DashboardPage() {
     { id: 'wallpapers', label: 'Wallpaper', icon: <ImageIcon className="w-4 h-4" />, permission: 'canManageWallpapers' },
     { id: 'visuals', label: 'Visual Protocols', icon: <Monitor className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'telegram-sync', label: 'Telegram Sync', icon: <CloudLightning className="w-4 h-4" />, permission: 'adminOnly' },
+    { id: 'history', label: 'Message History', icon: <MessageCircle className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'users', label: 'Identity Mgmt', icon: <Users className="w-4 h-4" />, permission: 'adminOnly' }
   ].filter(item => {
     if (item.permission === 'all') return true;
@@ -565,6 +567,7 @@ export default function DashboardPage() {
       case 'live-wallpapers': return liveWallpapers;
       case 'guides': return guides;
       case 'root': return rootPackages;
+      case 'history': return [];
       default: return [];
     }
   };
@@ -588,7 +591,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex flex-col gap-6">
-        <div className="flex flex-nowrap gap-2 overflow-x-auto pb-4 scrollbar-hide">
+        <div className="flex flex-wrap gap-2">
           {menuItems.map((item) => (
             <motion.button
               key={item.id}
@@ -596,7 +599,7 @@ export default function DashboardPage() {
               whileTap={{ scale: 0.95, y: -5, boxShadow: "0 0 20px 5px rgba(255, 255, 255, 0.5)" }}
               onClick={() => setActiveTab(item.id)}
               className={cn(
-                "flex items-center justify-center gap-3 px-6 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border shrink-0 w-[160px]",
+                "flex items-center justify-center gap-3 px-6 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border flex-1 min-w-[140px]",
                 activeTab === item.id 
                   ? "bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(255,255,255,0.3)]" 
                   : "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground"
@@ -981,9 +984,12 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-2">
-                {filteredItems(getActiveCollectionData()).map((item) => (
-                  <motion.div layout key={item.id} className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl bg-card border border-border gap-4">
+              <div className={cn("grid grid-cols-1", activeTab !== 'history' && "gap-2")}>
+                {activeTab === 'history' ? (
+                  <MessageHistory />
+                ) : (
+                  filteredItems(getActiveCollectionData()).map((item) => (
+                    <motion.div layout key={item.id} className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl bg-card border border-border gap-4">
                     <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
                       <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden flex items-center justify-center shrink-0 border border-border/10">
                         {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <Package className="w-6 h-6 text-muted-foreground" />}
@@ -1007,7 +1013,7 @@ export default function DashboardPage() {
                       </Button>
                     </div>
                   </motion.div>
-                ))}
+                )))}
               </div>
             </div>
           )}
