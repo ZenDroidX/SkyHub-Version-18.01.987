@@ -41,7 +41,7 @@ const extractResourcesPrompt = ai.definePrompt({
   name: 'extractResourcesPrompt',
   input: { schema: z.object({ html: z.string(), url: z.string() }) },
   output: { schema: ExtractResourcesOutputSchema },
-  prompt: `You are an expert AI Architect specializing in the Android customization ecosystem (ROMs, Kernels, Recovery).
+  prompt: `You are an expert AI Architect specializing in the Android customization ecosystem (ROMs, Wallpapers, Modules).
   
 I will provide you with content from a webpage or a Telegram community post (Source: {{{url}}}).
 

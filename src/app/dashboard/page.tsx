@@ -397,8 +397,15 @@ export default function DashboardPage() {
     if (extractedItems.length === 0) return;
     setIsAdding(true);
     try {
+      // Determine collection based on active tab
+      let collectionName = 'roms';
+      if (activeTab === 'wallpapers') collectionName = 'wallpapers';
+      else if (activeTab === 'live-wallpapers') collectionName = 'live-wallpapers';
+      else if (activeTab === 'mod-apks') collectionName = 'mod-apks';
+      else if (activeTab === 'modules') collectionName = 'modules';
+
       for (const item of extractedItems) {
-        const collRef = collection(db, 'roms');
+        const collRef = collection(db, collectionName);
         const newDocRef = doc(collRef);
         await setDoc(newDocRef, {
           ...item,
@@ -409,7 +416,7 @@ export default function DashboardPage() {
       }
       setExtractedItems([]);
       setIsBulkDialogOpen(false);
-      toast({ title: "Bulk Sync Successful", description: `${extractedItems.length} images have been added to the site.` });
+      toast({ title: "Bulk Sync Successful", description: `${extractedItems.length} items have been added to ${collectionName}.` });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Sync Failed", description: e.message });
     } finally {
