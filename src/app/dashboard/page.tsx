@@ -256,7 +256,9 @@ export default function DashboardPage() {
     { id: 'visuals', label: 'Visual Protocols', icon: <Monitor className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'telegram-sync', label: 'Telegram Sync', icon: <CloudLightning className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'history', label: 'Message History', icon: <MessageCircle className="w-4 h-4" />, permission: 'adminOnly' },
-    { id: 'users', label: 'Identity Mgmt', icon: <Users className="w-4 h-4" />, permission: 'adminOnly' }
+    { id: 'users', label: 'Identity Mgmt', icon: <Users className="w-4 h-4" />, permission: 'adminOnly' },
+    { id: 'audit', label: 'Activity Logs', icon: <FileText className="w-4 h-4" />, permission: 'superAdminOnly' },
+    { id: 'maintenance', label: 'Maintenance Hub', icon: <Zap className="w-4 h-4" />, permission: 'superAdminOnly' }
   ].filter(item => {
     if (item.permission === 'all') return true;
     if (item.permission === 'superAdminOnly') return isSuperAdmin;
@@ -282,6 +284,7 @@ export default function DashboardPage() {
   const liveWallpapersQuery = useMemoFirebase(() => query(collection(db, 'live-wallpapers'), orderBy('createdAt', 'desc')), [db]);
   const guidesQuery = useMemoFirebase(() => query(collection(db, 'tutorials'), orderBy('createdAt', 'desc')), [db]);
   const rootQuery = useMemoFirebase(() => query(collection(db, 'root-packages'), orderBy('createdAt', 'desc')), [db]);
+  const auditLogsQuery = useMemoFirebase(() => isSuperAdmin ? query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc')) : null, [db, isSuperAdmin]);
 
   const { data: roms } = useCollection(romsQuery);
   const { data: modules } = useCollection(modulesQuery);
@@ -291,6 +294,7 @@ export default function DashboardPage() {
   const { data: liveWallpapers } = useCollection(liveWallpapersQuery);
   const { data: guides } = useCollection(guidesQuery);
   const { data: rootPackages } = useCollection(rootQuery);
+  const { data: auditLogs } = useCollection(auditLogsQuery);
 
   const handleAddPost = async (content: string, collectionName: string) => {
     setIsAdding(true);
@@ -861,6 +865,32 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          ) : activeTab === 'audit' ? (
+            <div className="space-y-8">
+              <div className="flex items-center gap-4"><FileText className="w-8 h-8 text-primary" /><h2 className="text-3xl font-black uppercase">Activity Logs</h2></div>
+              <Card className="p-8 rounded-[2rem] bg-muted/30 border-border">
+                <div className="space-y-2">
+                  {auditLogs?.map((log) => (
+                    <div key={log.id} className="p-4 bg-black/20 rounded-lg flex justify-between items-center text-[10px] font-code">
+                      <span>{log.action} - UID: {log.uid}</span>
+                      <span className="text-muted-foreground">{log.timestamp?.toDate().toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          ) : activeTab === 'maintenance' ? (
+            <div className="space-y-8">
+              <div className="flex items-center gap-4"><Zap className="w-8 h-8 text-primary" /><h2 className="text-3xl font-black uppercase">Maintenance Hub</h2></div>
+              <Card className="p-8 rounded-[2rem] bg-muted/30 border-border space-y-6">
+                <div className="flex items-center justify-between p-4 bg-black/20 rounded-xl">
+                  <Label>Maintenance Mode</Label>
+                  <Switch checked={settings?.maintenanceMode} onCheckedChange={(checked) => updateDocumentNonBlocking(settingsRef, { maintenanceMode: checked })} />
+                </div>
+                <Input placeholder="Message for users" defaultValue={settings?.maintenanceMessage} onBlur={(e) => updateDocumentNonBlocking(settingsRef, { maintenanceMessage: e.target.value })} />
+                <Input type="datetime-local" defaultValue={settings?.maintenanceEndTime ? new Date(settings.maintenanceEndTime.toDate()).toISOString().slice(0, 16) : ''} onChange={(e) => updateDocumentNonBlocking(settingsRef, { maintenanceEndTime: new Date(e.target.value) })} />
+              </Card>
             </div>
           ) : activeTab === 'visuals' ? (
             <div className="space-y-8">

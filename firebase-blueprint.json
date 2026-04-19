@@ -56,6 +56,8 @@
       "properties": {
         "siteName": { "type": "string" },
         "maintenanceMode": { "type": "boolean" },
+        "maintenanceMessage": { "type": "string" },
+        "maintenanceEndTime": { "type": "string", "format": "date-time" },
         "welcomeMessage": { "type": "string" },
         "heroTitle": { "type": "string" },
         "heroSubtitle": { "type": "string" },
@@ -135,6 +137,18 @@
         "url": { "type": "string" }
       },
       "required": ["content", "date", "url"]
+    },
+    "ActivityLog": {
+      "title": "Activity Log",
+      "description": "Records user actions for auditing.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "action": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "details": { "type": "object" }
+      },
+      "required": ["uid", "action", "timestamp"]
     }
   },
   "firestore": {
@@ -149,6 +163,10 @@
     "/posts/{postId}": {
       "schema": "Post",
       "description": "Collection of Telegram posts."
+    },
+    "/audit_logs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "System activity logs."
     }
   }
 }

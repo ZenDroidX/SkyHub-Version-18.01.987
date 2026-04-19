@@ -127,6 +127,11 @@ service cloud.firestore {
       allow create: if isSignedIn();
     }
 
+    match /audit_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isSignedIn();
+    }
+
     // OTP Codes: Allow server actions to write and client to read for verification
     match /otp_codes/{email} {
       allow read, write: if true;
