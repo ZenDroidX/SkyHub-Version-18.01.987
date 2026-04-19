@@ -258,6 +258,7 @@ export default function DashboardPage() {
     { id: 'history', label: 'Message History', icon: <MessageCircle className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'users', label: 'Identity Mgmt', icon: <Users className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'audit', label: 'Activity Logs', icon: <FileText className="w-4 h-4" />, permission: 'superAdminOnly' },
+    { id: 'payments', label: 'Payment Hub', icon: <CreditCard className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'maintenance', label: 'Maintenance Hub', icon: <Zap className="w-4 h-4" />, permission: 'superAdminOnly' }
   ].filter(item => {
     if (item.permission === 'all') return true;
@@ -913,8 +914,20 @@ export default function DashboardPage() {
                 <Input type="datetime-local" defaultValue={globalSettings?.maintenanceStartTime ? new Date(globalSettings.maintenanceStartTime.toDate()).toISOString().slice(0, 16) : ''} onChange={(e) => updateDocumentNonBlocking(globalSettingsRef, { maintenanceStartTime: new Date(e.target.value) })} />
                 <Label>End Time</Label>
                 <Input type="datetime-local" defaultValue={globalSettings?.maintenanceEndTime ? new Date(globalSettings.maintenanceEndTime.toDate()).toISOString().slice(0, 16) : ''} onChange={(e) => updateDocumentNonBlocking(globalSettingsRef, { maintenanceEndTime: new Date(e.target.value) })} />
-                <Input placeholder="UPI ID (e.g., user@upi)" defaultValue={globalSettings?.upiId} onBlur={(e) => updateDocumentNonBlocking(globalSettingsRef, { upiId: e.target.value })} />
-                <Input placeholder="UPI Amount (e.g., 100)" defaultValue={globalSettings?.upiAmount} onBlur={(e) => updateDocumentNonBlocking(globalSettingsRef, { upiAmount: e.target.value })} />
+              </Card>
+            </div>
+          ) : activeTab === 'payments' ? (
+            <div className="space-y-8">
+              <div className="flex items-center gap-4"><CreditCard className="w-8 h-8 text-primary" /><h2 className="text-3xl font-black uppercase">Payment Hub</h2></div>
+              <Card className="p-8 rounded-[2rem] bg-muted/30 border-border space-y-6">
+                <div className="space-y-2">
+                  <Label>UPI ID</Label>
+                  <Input placeholder="UPI ID (e.g., user@upi)" defaultValue={settings?.upiId || ''} onBlur={(e) => updateDocumentNonBlocking(settingsRef, { upiId: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>UPI Amount</Label>
+                  <Input placeholder="UPI Amount (e.g., 100)" defaultValue={settings?.upiAmount || ''} onBlur={(e) => updateDocumentNonBlocking(settingsRef, { upiAmount: e.target.value })} />
+                </div>
               </Card>
             </div>
           ) : activeTab === 'visuals' ? (
@@ -1323,8 +1336,6 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <Label className="text-[10px] font-black uppercase tracking-widest">Payment Links</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input name="upiId" defaultValue={settings?.upiId} placeholder="UPI ID (e.g. user@upi)" className="bg-muted rounded-xl h-12" />
-                  <Input name="upiAmount" defaultValue={settings?.upiAmount} placeholder="UPI Amount (e.g. 100)" className="bg-muted rounded-xl h-12" />
                   <Input name="qrImageUrl" defaultValue={settings?.qrImageUrl} placeholder="QR Code Image URL" className="bg-muted rounded-xl h-12" />
                 </div>
               </div>
