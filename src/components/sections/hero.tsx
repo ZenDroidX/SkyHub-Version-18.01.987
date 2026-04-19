@@ -50,9 +50,13 @@ export function Hero() {
   };
 
   const handleSupportClick = () => {
+    if (!upiId) {
+      toast({ title: "Configuration Error", description: "UPI ID has not been set by the admin." });
+      return;
+    }
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      window.location.href = `upi://pay?pa=${upiId}&am=${upiAmount}&cu=INR`;
+      window.location.href = `upi://pay?pa=${upiId}${upiAmount ? `&am=${upiAmount}` : ''}&cu=INR`;
     } else {
       setIsSupportOpen(true);
     }

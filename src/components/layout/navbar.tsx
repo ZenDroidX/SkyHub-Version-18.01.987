@@ -28,13 +28,13 @@ import {
   Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useSearch } from '@/context/SearchContext';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
-import { toast } from '@/hooks/use-toast';
 import {
   Sheet,
   SheetContent,
@@ -118,9 +118,13 @@ export function Navbar() {
   };
 
   const handleSupportClick = () => {
+    if (!upiId) {
+      toast({ title: "Configuration Error", description: "UPI ID has not been set by the admin." });
+      return;
+    }
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      window.location.href = `upi://pay?pa=${upiId}&am=${upiAmount}&cu=INR`;
+      window.location.href = `upi://pay?pa=${upiId}${upiAmount ? `&am=${upiAmount}` : ''}&cu=INR`;
     } else {
       setIsSupportOpen(true);
     }
