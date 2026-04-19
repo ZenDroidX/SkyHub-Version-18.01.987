@@ -909,8 +909,12 @@ export default function DashboardPage() {
                   <Switch checked={globalSettings?.maintenanceMode} onCheckedChange={(checked) => updateDocumentNonBlocking(globalSettingsRef, { maintenanceMode: checked })} />
                 </div>
                 <Input placeholder="Message for users" defaultValue={globalSettings?.maintenanceMessage} onBlur={(e) => updateDocumentNonBlocking(globalSettingsRef, { maintenanceMessage: e.target.value })} />
+                <Label>Start Time</Label>
+                <Input type="datetime-local" defaultValue={globalSettings?.maintenanceStartTime ? new Date(globalSettings.maintenanceStartTime.toDate()).toISOString().slice(0, 16) : ''} onChange={(e) => updateDocumentNonBlocking(globalSettingsRef, { maintenanceStartTime: new Date(e.target.value) })} />
+                <Label>End Time</Label>
                 <Input type="datetime-local" defaultValue={globalSettings?.maintenanceEndTime ? new Date(globalSettings.maintenanceEndTime.toDate()).toISOString().slice(0, 16) : ''} onChange={(e) => updateDocumentNonBlocking(globalSettingsRef, { maintenanceEndTime: new Date(e.target.value) })} />
                 <Input placeholder="UPI ID (e.g., user@upi)" defaultValue={globalSettings?.upiId} onBlur={(e) => updateDocumentNonBlocking(globalSettingsRef, { upiId: e.target.value })} />
+                <Input placeholder="UPI Amount (e.g., 100)" defaultValue={globalSettings?.upiAmount} onBlur={(e) => updateDocumentNonBlocking(globalSettingsRef, { upiAmount: e.target.value })} />
               </Card>
             </div>
           ) : activeTab === 'visuals' ? (
@@ -1320,6 +1324,7 @@ export default function DashboardPage() {
                 <Label className="text-[10px] font-black uppercase tracking-widest">Payment Links</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input name="upiId" defaultValue={settings?.upiId} placeholder="UPI ID (e.g. user@upi)" className="bg-muted rounded-xl h-12" />
+                  <Input name="upiAmount" defaultValue={settings?.upiAmount} placeholder="UPI Amount (e.g. 100)" className="bg-muted rounded-xl h-12" />
                   <Input name="qrImageUrl" defaultValue={settings?.qrImageUrl} placeholder="QR Code Image URL" className="bg-muted rounded-xl h-12" />
                 </div>
               </div>

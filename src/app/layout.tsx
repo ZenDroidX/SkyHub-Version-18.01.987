@@ -16,6 +16,30 @@ import ThemeProvider from '@/components/ThemeProvider';
 import { SearchProvider } from '@/context/SearchContext';
 import { NotificationProvider } from '@/components/NotificationProvider';
 
+function Countdown({ endDate }: { endDate: Date }) {
+  const [timeLeft, setTimeLeft] = useState(endDate.getTime() - Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(endDate.getTime() - Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [endDate]);
+
+  if (timeLeft <= 0) return null;
+
+  const seconds = Math.floor((timeLeft / 1000) % 60);
+  const minutes = Math.floor((timeLeft / 1000 / 60) % 60);
+  const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+
+  return (
+    <div className="text-4xl font-mono mt-4 font-bold">
+      {days > 0 && `${days}d `}{hours.toString().padStart(2, '0')}:{minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+    </div>
+  );
+}
+
 function RootContent({ children }: { children: React.ReactNode }) {
   const db = useFirestore();
   const settingsRef = useMemoFirebase(() => doc(db, 'donation', 'settings'), [db]);
@@ -32,7 +56,28 @@ function RootContent({ children }: { children: React.ReactNode }) {
 
   const globalSettingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
   const { data: globalSettings } = useDoc(globalSettingsRef);
-  const isMaintenanceMode = globalSettings?.maintenanceMode;
+  
+  const [isMaintenanceActive, setIsMaintenanceActive] = useState(false);
+  const endTime = globalSettings?.maintenanceEndTime?.toDate();
+
+  useEffect(() => {
+    const checkMaintenance = () => {
+      const now = new Date();
+      const startTime = globalSettings?.maintenanceStartTime?.toDate();
+      const endTime = globalSettings?.maintenanceEndTime?.toDate();
+      setIsMaintenanceActive(
+        !!globalSettings?.maintenanceMode &&
+        !!startTime &&
+        !!endTime &&
+        now >= startTime &&
+        now <= endTime
+      );
+    };
+    
+    checkMaintenance();
+    const timer = setInterval(checkMaintenance, 1000);
+    return () => clearInterval(timer);
+  }, [globalSettings]);
 
   useEffect(() => {
     auth.onAuthStateChanged(async (user) => {
@@ -66,14 +111,12 @@ function RootContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {isMaintenanceMode ? (
+      {isMaintenanceActive ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 text-white p-8 text-center">
           <div className="space-y-4">
             <h1 className="text-4xl font-black uppercase">System Under Maintenance</h1>
             <p className="text-xl text-muted-foreground">{globalSettings?.maintenanceMessage || 'We will be back shortly.'}</p>
-            {globalSettings?.maintenanceEndTime && (
-              <p className="text-sm">Scheduled return: {new Date(globalSettings.maintenanceEndTime.toDate()).toLocaleString()}</p>
-            )}
+            {endTime && <Countdown endDate={endTime} />}
           </div>
         </div>
       ) : showLoadingScreen && (
@@ -82,7 +125,7 @@ function RootContent({ children }: { children: React.ReactNode }) {
           onFinished={() => setIsInitialLoad(false)} 
         />
       )}
-      <div className={showLoadingScreen || isMaintenanceMode ? 'hidden' : 'block'}>
+      <div className={showLoadingScreen || isMaintenanceActive ? 'hidden' : 'block'}>
         {children}
         <AudioLobby />
       </div>

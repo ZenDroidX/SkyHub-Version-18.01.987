@@ -28,6 +28,7 @@ export function Hero() {
   const [copied, setCopied] = useState(false);
 
   const upiId = settings?.upiId || DEFAULT_DONATION_CONFIG.upiId;
+  const upiAmount = settings?.upiAmount || DEFAULT_DONATION_CONFIG.upiAmount;
   const qrUrl = settings?.qrImageUrl || DEFAULT_DONATION_CONFIG.qrImageUrl;
   const telegramChannel = globalSettings?.socialLinks?.telegramChannel || DEFAULT_DONATION_CONFIG.telegramChannelUrl;
   const telegramDiscussion = globalSettings?.socialLinks?.discussion || DEFAULT_DONATION_CONFIG.telegramDiscussionUrl;
@@ -51,7 +52,7 @@ export function Hero() {
   const handleSupportClick = () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      window.location.href = `upi://pay?pa=${upiId}`;
+      window.location.href = `upi://pay?pa=${upiId}&am=${upiAmount}&cu=INR`;
     } else {
       setIsSupportOpen(true);
     }

@@ -77,6 +77,7 @@ export function Navbar() {
   const { data: globalSettings } = useDoc(globalSettingsRef);
 
   const upiId = settings?.upiId || DEFAULT_DONATION_CONFIG.upiId;
+  const upiAmount = settings?.upiAmount || DEFAULT_DONATION_CONFIG.upiAmount;
   const qrUrl = settings?.qrImageUrl || DEFAULT_DONATION_CONFIG.qrImageUrl;
   const logoUrl = globalSettings?.logoUrl || DEFAULT_DONATION_CONFIG.logoUrl;
   const telegramChannel = globalSettings?.socialLinks?.telegramChannel || DEFAULT_DONATION_CONFIG.telegramChannelUrl;
@@ -119,7 +120,7 @@ export function Navbar() {
   const handleSupportClick = () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      window.location.href = `upi://pay?pa=${upiId}`;
+      window.location.href = `upi://pay?pa=${upiId}&am=${upiAmount}&cu=INR`;
     } else {
       setIsSupportOpen(true);
     }

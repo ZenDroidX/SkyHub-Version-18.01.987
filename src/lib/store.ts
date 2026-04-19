@@ -71,6 +71,7 @@ export interface AudioConfig {
 
 export interface SiteSettings {
   upiId: string;
+  upiAmount?: string;
   qrImageUrl: string;
   logoUrl?: string;
   adminName?: string;
@@ -90,6 +91,7 @@ export type DonationConfig = SiteSettings;
 // Fallback defaults if Firestore is empty
 export const DEFAULT_DONATION_CONFIG: SiteSettings = {
   upiId: 'nexusforge@upi',
+  upiAmount: '100',
   qrImageUrl: 'https://i.postimg.cc/pVCW339q/IMG-20260205-214503-250.jpg',
   logoUrl: '',
   adminName: 'Mein Kxun',
