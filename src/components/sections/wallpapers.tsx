@@ -50,7 +50,7 @@ export function Wallpapers({ wallpapers, isLoading }: { wallpapers: any[], isLoa
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `${name.replace(/\s+/g, '-').toLowerCase() || 'sky-wallpaper'}.jpg`;
+      link.download = `${name.replace(/\s+/g, '-').toLowerCase() || 'skyhub-wallpaper'}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -82,7 +82,7 @@ export function Wallpapers({ wallpapers, isLoading }: { wallpapers: any[], isLoa
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
-        const fileName = `ZenDroid Wallo ${i + 1}.jpg`;
+        const fileName = `SkyHub Wallo ${i + 1}.jpg`;
         link.download = fileName;
         document.body.appendChild(link);
         link.click();
@@ -121,7 +121,7 @@ export function Wallpapers({ wallpapers, isLoading }: { wallpapers: any[], isLoa
           const response = await fetch(wall.imageUrl);
           if (!response.ok) throw new Error('Fetch error');
           const blob = await response.blob();
-          const fileName = `ZenDroid Wallo ${i + 1}.jpg`;
+          const fileName = `SkyHub Wallo ${i + 1}.jpg`;
           folder?.file(fileName, blob);
         } catch (itemError) {
           console.warn(`Registry skip: Node ${i+1} failed to archive.`, itemError);
@@ -132,7 +132,7 @@ export function Wallpapers({ wallpapers, isLoading }: { wallpapers: any[], isLoa
       const blobUrl = window.URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `ZenDroid-Wallo-Bundle.zip`;
+      link.download = `SkyHub-Wallo-Bundle.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

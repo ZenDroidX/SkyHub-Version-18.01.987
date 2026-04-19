@@ -1247,9 +1247,12 @@ export default function DashboardPage() {
                 <Label className="text-[9px] font-black uppercase ml-1">Discussion Channel Link</Label>
                 <Input name="discussionLink" defaultValue={editingItem?.discussionLink} placeholder="https://t.me/..." className="bg-muted rounded-xl h-12" />
               </div>
-              <div className="space-y-2">
-                <Label className="text-[9px] font-black uppercase ml-1">Payment Mode</Label>
-                <Input name="paymentMode" defaultValue={editingItem?.paymentMode} placeholder="E.g. Free, Paid, Donation" className="bg-muted rounded-xl h-12" />
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase tracking-widest">Payment Links</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input name="upiId" defaultValue={settings?.upiId} placeholder="UPI ID (e.g. user@upi)" className="bg-muted rounded-xl h-12" />
+                  <Input name="qrImageUrl" defaultValue={settings?.qrImageUrl} placeholder="QR Code Image URL" className="bg-muted rounded-xl h-12" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-[9px] font-black uppercase ml-1">Main Developer Credit</Label>

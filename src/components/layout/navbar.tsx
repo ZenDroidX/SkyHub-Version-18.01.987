@@ -117,15 +117,12 @@ export function Navbar() {
   };
 
   const handleSupportClick = () => {
-    if (paymentLink) {
-      window.open(paymentLink, '_blank');
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      // Redirect to UPI app with amount if set, or just default deep link
+      window.location.href = `upi://pay?pa=${upiId}&pn=SkyHub&cu=INR`;
     } else {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        window.location.href = `upi://pay?pa=${upiId}&pn=SkyHub&cu=INR`;
-      } else {
-        setIsSupportOpen(true);
-      }
+      setIsSupportOpen(true);
     }
   };
 
