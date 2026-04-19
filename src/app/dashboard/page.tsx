@@ -168,6 +168,7 @@ export default function DashboardPage() {
   const [bulkHtml, setBulkHtml] = useState('');
   const [bulkTelegramText, setBulkTelegramText] = useState('');
   const [bulkLinksText, setBulkLinksText] = useState('');
+  const [bulkAddLinks, setBulkAddLinks] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedItems, setExtractedItems] = useState<any[]>([]);
 
@@ -396,6 +397,7 @@ export default function DashboardPage() {
   const handleSaveBulk = async () => {
     if (extractedItems.length === 0) return;
     setIsAdding(true);
+    toast({ title: "Bulk Sync Initiated", description: "Adding items to the registry..." });
     try {
       // Determine collection based on active tab
       let collectionName = 'roms';
@@ -425,17 +427,36 @@ export default function DashboardPage() {
   };
 
   const handleBulkLinkSync = async () => {
-    const urls = bulkLinksText.split('\n').filter(url => url.trim().startsWith('http'));
-    if (urls.length === 0) return;
+    const lines = bulkLinksText.split('\n');
+    const urls = lines
+      .map(line => {
+        const match = line.match(/https?:\/\/[^\s]+/);
+        return match ? match[0] : null;
+      })
+      .filter((url): url is string => url !== null);
+    
+    if (urls.length === 0) {
+      toast({ variant: "destructive", title: "No Links Found", description: "Please ensure you have pasted valid http/https links." });
+      return;
+    }
+    
+    // Determine collection based on active tab
+    let collectionName = 'roms';
+    if (activeTab === 'wallpapers') collectionName = 'wallpapers';
+    else if (activeTab === 'live-wallpapers') collectionName = 'live-wallpapers';
+    else if (activeTab === 'mod-apks') collectionName = 'mod-apks';
+    else if (activeTab === 'modules') collectionName = 'modules';
     
     setIsAdding(true);
+    toast({ title: "Series Sync Initiated", description: `Processing ${urls.length} links...` });
+    
     let totalAdded = 0;
     try {
       for (const url of urls) {
         const result = await extractRoms({ url: url.trim() });
         if (result.roms && result.roms.length > 0) {
           for (const item of result.roms) {
-            const collRef = collection(db, 'roms');
+            const collRef = collection(db, collectionName);
             const newDocRef = doc(collRef);
             await setDoc(newDocRef, {
               ...item,
@@ -449,9 +470,40 @@ export default function DashboardPage() {
       }
       setBulkLinksText('');
       setIsBulkDialogOpen(false);
-      toast({ title: "Series Sync Complete", description: `${totalAdded} resources identified and registered.` });
+      toast({ title: "Series Sync Complete", description: `${totalAdded} resources identified and registered in ${collectionName}.` });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Series Sync Failed", description: e.message });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleBulkAdd = async () => {
+    const urls = bulkAddLinks.split('\n').filter(url => url.trim().startsWith('http'));
+    if (urls.length === 0) {
+      toast({ variant: "destructive", title: "No Links Found", description: "Please paste valid links." });
+      return;
+    }
+    
+    setIsAdding(true);
+    toast({ title: "Bulk Add Initiated", description: `Registering ${urls.length} items...` });
+    try {
+      const collRef = collection(db, activeTab);
+      for (const url of urls) {
+        const newDocRef = doc(collRef);
+        await setDoc(newDocRef, {
+          imageUrl: url.trim(),
+          name: `New Resource ${urls.indexOf(url) + 1}`,
+          createdAt: serverTimestamp(),
+          id: newDocRef.id,
+          developer: profile?.username || 'Admin'
+        });
+      }
+      setBulkAddLinks('');
+      setIsBulkDialogOpen(false);
+      toast({ title: "Bulk Add Complete", description: `Added ${urls.length} items to ${activeTab}.` });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Bulk Add Failed", description: e.message });
     } finally {
       setIsAdding(false);
     }
@@ -1168,8 +1220,8 @@ export default function DashboardPage() {
               <Button onClick={handleBulkLinkSync} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Initialize Link Sync Series</Button>
             </TabsContent>
             <TabsContent value="bulk" className="space-y-6">
-              <Textarea placeholder="PASTE LINKS (ONE PER LINE)..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
-              <Button className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Add to {menuItems.find(i => i.id === activeTab)?.label}</Button>
+              <Textarea value={bulkAddLinks} onChange={(e) => setBulkAddLinks(e.target.value)} placeholder="PASTE IMAGE LINKS (ONE PER LINE)..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
+              <Button onClick={handleBulkAdd} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Add to {menuItems.find(i => i.id === activeTab)?.label}</Button>
             </TabsContent>
           </Tabs>
         </DialogContent>

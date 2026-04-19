@@ -121,6 +121,7 @@ const initiateDownload = async (db: any, collectionName: string, id: string, url
     await updateDoc(doc(db, collectionName, id), {
       downloadCount: increment(1)
     });
+    toast({ title: "Download count updated", description: "Registry synchronized." });
   } catch (e) {
     console.error("Failed to increment download count", e);
   }
