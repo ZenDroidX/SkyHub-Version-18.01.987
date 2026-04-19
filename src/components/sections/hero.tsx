@@ -51,7 +51,7 @@ export function Hero() {
   const handleSupportClick = () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      window.location.href = `upi://pay?pa=${upiId}&pn=SkyHub&cu=INR`;
+      window.location.href = `upi://pay?pa=${upiId}`;
     } else {
       setIsSupportOpen(true);
     }

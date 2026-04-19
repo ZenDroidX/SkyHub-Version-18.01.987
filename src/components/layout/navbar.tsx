@@ -119,8 +119,7 @@ export function Navbar() {
   const handleSupportClick = () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      // Redirect to UPI app with amount if set, or just default deep link
-      window.location.href = `upi://pay?pa=${upiId}&pn=SkyHub&cu=INR`;
+      window.location.href = `upi://pay?pa=${upiId}`;
     } else {
       setIsSupportOpen(true);
     }

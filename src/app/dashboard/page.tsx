@@ -398,6 +398,26 @@ export default function DashboardPage() {
     finally { setIsExtracting(false); }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsExtracting(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const html = event.target?.result as string;
+      try {
+        const result = await extractRomsFromRawHtml({ html });
+        setExtractedItems(result.roms || []);
+        toast({ title: "Extraction Complete" });
+      } catch (e: any) {
+        toast({ variant: "destructive", title: "Failed", description: e.message });
+      } finally {
+        setIsExtracting(false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleSaveBulk = async () => {
     if (extractedItems.length === 0) return;
     setIsAdding(true);
@@ -886,10 +906,11 @@ export default function DashboardPage() {
               <Card className="p-8 rounded-[2rem] bg-muted/30 border-border space-y-6">
                 <div className="flex items-center justify-between p-4 bg-black/20 rounded-xl">
                   <Label>Maintenance Mode</Label>
-                  <Switch checked={settings?.maintenanceMode} onCheckedChange={(checked) => updateDocumentNonBlocking(settingsRef, { maintenanceMode: checked })} />
+                  <Switch checked={globalSettings?.maintenanceMode} onCheckedChange={(checked) => updateDocumentNonBlocking(globalSettingsRef, { maintenanceMode: checked })} />
                 </div>
-                <Input placeholder="Message for users" defaultValue={settings?.maintenanceMessage} onBlur={(e) => updateDocumentNonBlocking(settingsRef, { maintenanceMessage: e.target.value })} />
-                <Input type="datetime-local" defaultValue={settings?.maintenanceEndTime ? new Date(settings.maintenanceEndTime.toDate()).toISOString().slice(0, 16) : ''} onChange={(e) => updateDocumentNonBlocking(settingsRef, { maintenanceEndTime: new Date(e.target.value) })} />
+                <Input placeholder="Message for users" defaultValue={globalSettings?.maintenanceMessage} onBlur={(e) => updateDocumentNonBlocking(globalSettingsRef, { maintenanceMessage: e.target.value })} />
+                <Input type="datetime-local" defaultValue={globalSettings?.maintenanceEndTime ? new Date(globalSettings.maintenanceEndTime.toDate()).toISOString().slice(0, 16) : ''} onChange={(e) => updateDocumentNonBlocking(globalSettingsRef, { maintenanceEndTime: new Date(e.target.value) })} />
+                <Input placeholder="UPI ID (e.g., user@upi)" defaultValue={globalSettings?.upiId} onBlur={(e) => updateDocumentNonBlocking(globalSettingsRef, { upiId: e.target.value })} />
               </Card>
             </div>
           ) : activeTab === 'visuals' ? (
@@ -1223,9 +1244,10 @@ export default function DashboardPage() {
         <DialogContent className="bg-card rounded-[2.5rem] p-8 max-w-2xl border-border">
           <DialogHeader><DialogTitle className="uppercase font-black">Bulk Sync Terminal</DialogTitle></DialogHeader>
           <Tabs defaultValue="telegram" className="mt-4">
-            <TabsList className="grid w-full grid-cols-3 h-12 mb-6 bg-muted p-1">
+            <TabsList className="grid w-full grid-cols-4 h-12 mb-6 bg-muted p-1">
               <TabsTrigger value="telegram" className="text-[9px] uppercase font-black">Telegram AI</TabsTrigger>
               <TabsTrigger value="links" className="text-[9px] uppercase font-black">Link Series</TabsTrigger>
+              <TabsTrigger value="file" className="text-[9px] uppercase font-black">Webpage File</TabsTrigger>
               <TabsTrigger value="bulk" className="text-[9px] uppercase font-black">Bulk Add</TabsTrigger>
             </TabsList>
             <TabsContent value="telegram" className="space-y-6">
@@ -1248,6 +1270,23 @@ export default function DashboardPage() {
             <TabsContent value="links" className="space-y-6">
               <Textarea value={bulkLinksText} onChange={(e) => setBulkLinksText(e.target.value)} placeholder="PASTE ONE LINK PER LINE FOR AUTO-SCANNING..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
               <Button onClick={handleBulkLinkSync} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Initialize Link Sync Series</Button>
+            </TabsContent>
+            <TabsContent value="file" className="space-y-6">
+              <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-muted rounded-2xl p-6">
+                <input type="file" accept=".html" onChange={handleFileUpload} className="hidden" id="html-upload" />
+                <Label htmlFor="html-upload" className="cursor-pointer bg-muted py-3 px-6 rounded-xl text-[10px] uppercase font-black tracking-widest">Select index.html</Label>
+              </div>
+              {extractedItems.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 max-h-[200px] overflow-y-auto">
+                      <p className="text-[8px] font-black uppercase text-blue-400 mb-2">Detected Protocols from File:</p>
+                      {extractedItems.map((item, idx) => (
+                        <div key={idx} className="text-[9px] text-muted-foreground uppercase mb-1">• {item.name} ({item.androidVersion || 'N/A'})</div>
+                      ))}
+                    </div>
+                    <Button onClick={handleSaveBulk} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Sync {extractedItems.length} Resources</Button>
+                  </div>
+              )}
             </TabsContent>
             <TabsContent value="bulk" className="space-y-6">
               <Textarea value={bulkAddLinks} onChange={(e) => setBulkAddLinks(e.target.value)} placeholder="PASTE IMAGE LINKS (ONE PER LINE)..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />

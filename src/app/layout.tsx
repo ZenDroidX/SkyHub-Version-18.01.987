@@ -30,6 +30,10 @@ function RootContent({ children }: { children: React.ReactNode }) {
     ? (settings.loading.enabled !== false)
     : (DEFAULT_DONATION_CONFIG.loading?.enabled !== false);
 
+  const globalSettingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const { data: globalSettings } = useDoc(globalSettingsRef);
+  const isMaintenanceMode = globalSettings?.maintenanceMode;
+
   useEffect(() => {
     auth.onAuthStateChanged(async (user) => {
       if (user) {
@@ -62,13 +66,23 @@ function RootContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {showLoadingScreen && (
+      {isMaintenanceMode ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 text-white p-8 text-center">
+          <div className="space-y-4">
+            <h1 className="text-4xl font-black uppercase">System Under Maintenance</h1>
+            <p className="text-xl text-muted-foreground">{globalSettings?.maintenanceMessage || 'We will be back shortly.'}</p>
+            {globalSettings?.maintenanceEndTime && (
+              <p className="text-sm">Scheduled return: {new Date(globalSettings.maintenanceEndTime.toDate()).toLocaleString()}</p>
+            )}
+          </div>
+        </div>
+      ) : showLoadingScreen && (
         <LoadingScreen 
           config={settings?.loading || DEFAULT_DONATION_CONFIG.loading} 
           onFinished={() => setIsInitialLoad(false)} 
         />
       )}
-      <div className={showLoadingScreen ? 'hidden' : 'block'}>
+      <div className={showLoadingScreen || isMaintenanceMode ? 'hidden' : 'block'}>
         {children}
         <AudioLobby />
       </div>
