@@ -9,6 +9,8 @@ import { FieldValue } from 'firebase-admin/firestore';
  * and ensure immediate acknowledgment (200) to the Telegram Bot API.
  */
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const update = await req.json();

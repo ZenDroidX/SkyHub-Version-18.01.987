@@ -10,16 +10,18 @@ import { doc } from 'firebase/firestore';
 import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
 
 function Countdown({ endDate }: { endDate: Date }) {
-  const [timeLeft, setTimeLeft] = useState(endDate.getTime() - Date.now());
+  const [mounted, setMounted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(endDate.getTime() - Date.now());
-    }, 1000);
+    setMounted(true);
+    const updateTime = () => setTimeLeft(endDate.getTime() - Date.now());
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, [endDate]);
 
-  if (timeLeft <= 0) return null;
+  if (!mounted || timeLeft <= 0) return null;
 
   const seconds = Math.floor((timeLeft / 1000) % 60);
   const minutes = Math.floor((timeLeft / 1000 / 60) % 60);

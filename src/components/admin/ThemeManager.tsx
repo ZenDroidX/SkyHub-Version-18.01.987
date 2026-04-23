@@ -165,8 +165,8 @@ export default function ThemeManager() {
               <div className="space-y-2">
                 {gradientColors.map((color, index) => (
                   <div key={index} className="flex gap-2">
-                    <Input type="color" value={color} onChange={(e) => updateColor(index, e.target.value)} className="w-12 h-12 p-1" />
-                    <Input type="text" value={color} onChange={(e) => updateColor(index, e.target.value)} className="flex-1" />
+                    <Input type="color" value={color || ''} onChange={(e) => updateColor(index, e.target.value)} className="w-12 h-12 p-1" />
+                    <Input type="text" value={color || ''} onChange={(e) => updateColor(index, e.target.value)} className="flex-1" />
                     {gradientColors.length > 2 && (
                       <Button variant="destructive" onClick={() => removeColor(index)}>Remove</Button>
                     )}

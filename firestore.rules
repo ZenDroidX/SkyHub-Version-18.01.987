@@ -20,10 +20,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSuperAdmin() || (
-        isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      return isSignedIn() && (
+        isSuperAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
@@ -124,6 +124,7 @@ service cloud.firestore {
     }
 
     match /userActivity/{activityId} {
+      allow read, list: if isAdmin();
       allow create: if isSignedIn();
     }
 

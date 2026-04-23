@@ -15,10 +15,11 @@ import { toast } from '@/hooks/use-toast';
 import { useNotifications } from '@/components/NotificationProvider';
 import { cn } from '@/lib/utils';
 import ThemeManager from './ThemeManager';
-import LayoutManager from './LayoutManager';
 import { Slideshow } from '@/components/sections/slideshow';
 import { ActivityLog } from './ActivityLog';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { logActivity } from '@/lib/activity-logger';
+import { initializeFirebase } from '@/firebase';
 
 export default function SuperAdminPanel() {
   const { addNotification } = useNotifications();
@@ -68,9 +69,17 @@ export default function SuperAdminPanel() {
 
   const handleAddNotification = async (message: string, durationStr: string) => {
     if (!message) return;
-    const duration = parseInt(durationStr) * 1000;
-    await addDoc(collection(db, 'notifications'), { message, createdAt: serverTimestamp() });
-    addNotification(message, duration);
+    const durationSeconds = parseInt(durationStr);
+    const durationMs = durationSeconds * 1000;
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + durationMs);
+    
+    await addDoc(collection(db, 'notifications'), { 
+      message, 
+      duration: durationMs,
+      createdAt: serverTimestamp(),
+      expiresAt: expiresAt
+    });
     setNewNotificationMessage('');
   };
   const handleDeleteNotification = async (id: string) => {
@@ -203,7 +212,6 @@ export default function SuperAdminPanel() {
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="posts">Posts</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
-          <TabsTrigger value="layout">Layout</TabsTrigger>
         </TabsList>
 
         <TabsContent value="theme">
@@ -325,7 +333,7 @@ export default function SuperAdminPanel() {
             <CardContent className="space-y-4">
               {formData.slideshowImages?.map((img: any, index: number) => (
                 <div key={index} className={cn("grid grid-cols-4 gap-2 p-4 border rounded-lg", img.deleted && "opacity-50 bg-muted")}>
-                  <Input placeholder="URL" value={img.url} onChange={(e) => {
+                  <Input placeholder="URL" value={img.url || ''} onChange={(e) => {
                     const newImages = [...formData.slideshowImages];
                     newImages[index].url = e.target.value;
                     setFormData({...formData, slideshowImages: newImages});
@@ -424,7 +432,7 @@ export default function SuperAdminPanel() {
               {notifications?.map((notif: any) => (
                 <div key={notif.id} className="flex flex-col gap-3 p-5 border border-border bg-card rounded-2xl shadow-sm">
                   <Input 
-                    value={notif.message} 
+                    value={notif.message || ''} 
                     onChange={(e) => handleUpdateNotification(notif.id, e.target.value)} 
                     className="w-full"
                   />
@@ -474,15 +482,6 @@ export default function SuperAdminPanel() {
 
         <TabsContent value="activity">
            <ActivityLog />
-        </TabsContent>
-
-        <TabsContent value="layout">
-          <Card>
-            <CardHeader><CardTitle>Layout Manager</CardTitle></CardHeader>
-            <CardContent>
-              <LayoutManager />
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

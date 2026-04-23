@@ -254,7 +254,6 @@ export default function DashboardPage() {
   const menuItems = [
     { id: 'profile', label: 'My Profile', icon: <UserCircle className="w-4 h-4" />, permission: 'all' },
     { id: 'themes', label: 'Themes', icon: <Palette className="w-4 h-4" />, permission: 'superAdminOnly' },
-    { id: 'layout', label: 'Layout Manage', icon: <Settings2 className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'roms', label: 'Custom ROMs', icon: <Package className="w-4 h-4" />, permission: 'canManageRoms' },
     { id: 'modules', label: 'Modules', icon: <Smartphone className="w-4 h-4" />, permission: 'canManageModules' },
     { id: 'mod-apks', label: 'Mod APKs', icon: <ShieldAlert className="w-4 h-4" />, permission: 'canManageApks' },
@@ -268,7 +267,6 @@ export default function DashboardPage() {
     { id: 'telegram-sync', label: 'Telegram Sync', icon: <CloudLightning className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'history', label: 'Message History', icon: <MessageCircle className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'users', label: 'Identity Mgmt', icon: <Users className="w-4 h-4" />, permission: 'adminOnly' },
-    { id: 'audit', label: 'Activity Logs', icon: <FileText className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'payments', label: 'Payment Hub', icon: <CreditCard className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'maintenance', label: 'Maintenance Hub', icon: <Zap className="w-4 h-4" />, permission: 'superAdminOnly' }
   ].filter(item => {
@@ -735,33 +733,53 @@ export default function DashboardPage() {
         </Badge>
       </div>
 
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap gap-2">
-          {menuItems.map((item) => (
-            <motion.button
-              key={item.id}
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.95, y: -5, boxShadow: "0 0 20px 5px rgba(255, 255, 255, 0.5)" }}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "flex items-center justify-center gap-3 px-6 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border flex-1 min-w-[140px]",
-                activeTab === item.id 
-                  ? "bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(255,255,255,0.3)]" 
-                  : "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-              )}
-            >
-              {item.icon} <span className="opacity-100">{item.label}</span>
-            </motion.button>
-          ))}
-        </div>
+      <div className="flex flex-col lg:flex-row gap-10 items-start">
+        {/* Navigation Sidebar (Desktop) / Tab Bar (Mobile) */}
+        <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-32 space-y-4">
+          <div className="flex flex-col gap-2 p-2 bg-card/30 backdrop-blur-xl border border-border rounded-[2.5rem]">
+            {menuItems.map((item) => (
+              <motion.button
+                key={item.id}
+                whileHover={{ x: 4, backgroundColor: "rgba(var(--primary), 0.1)" }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setActiveTab(item.id)}
+                className={cn(
+                  "flex items-center gap-3 px-5 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border text-left w-full",
+                  activeTab === item.id 
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                    : "bg-transparent text-muted-foreground border-transparent hover:border-border/50 hover:text-foreground"
+                )}
+              >
+                <div className={cn(
+                  "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
+                  activeTab === item.id ? "bg-white/20" : "bg-muted"
+                )}>
+                  {item.icon}
+                </div>
+                <span className="flex-1 uppercase tracking-widest">{item.label}</span>
+                {activeTab === item.id && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_#fff] animate-pulse" />}
+              </motion.button>
+            ))}
+          </div>
 
+          {/* Quick Stats or Info could go here */}
+          <div className="hidden lg:block p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10">
+            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-primary mb-2">System Status</p>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              Neural Link Optimized
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Workspace Area */}
         <motion.div 
           layout 
           transition={{ duration: 0.4 }} 
-          className="bg-card rounded-[2rem] p-8 min-h-[500px] border border-border shadow-2xl relative overflow-hidden"
+          className="flex-1 w-full bg-card/20 backdrop-blur-md rounded-[3rem] p-6 lg:p-12 min-h-[700px] border border-border/50 shadow-2xl relative overflow-hidden"
         >
           {activeTab === 'profile' ? (
-            <div className="space-y-8 max-w-2xl mx-auto">
+            <div className="space-y-10 max-w-4xl">
               <div className="flex items-center gap-4"><UserCircle className="w-8 h-8 text-primary" /><h2 className="text-3xl font-black uppercase">My Profile</h2></div>
               <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6">
                 <div className="space-y-4">
@@ -799,7 +817,7 @@ export default function DashboardPage() {
           ) : activeTab === 'themes' ? (
             <SuperAdminPanel />
           ) : activeTab === 'layout' ? (
-            <div className="space-y-8 max-w-4xl mx-auto">
+            <div className="space-y-10">
               <div className="flex items-center gap-4"><Settings2 className="w-8 h-8 text-primary" /><h2 className="text-3xl font-black uppercase">Layout Management</h2></div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6">
@@ -1317,7 +1335,7 @@ export default function DashboardPage() {
                        <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Resource Identity</Label>
                           <Input 
-                            value={editingExtractedItem.item.name} 
+                            value={editingExtractedItem.item.name || ''} 
                             onChange={(e) => {
                               const newItems = [...extractedItems];
                               newItems[editingExtractedItem.index].name = e.target.value;
@@ -1358,7 +1376,7 @@ export default function DashboardPage() {
                        <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Transmission Endpoint (URL)</Label>
                           <Input 
-                            value={editingExtractedItem.item.downloadUrl} 
+                            value={editingExtractedItem.item.downloadUrl || ''} 
                             onChange={(e) => {
                               const newItems = [...extractedItems];
                               newItems[editingExtractedItem.index].downloadUrl = e.target.value;
@@ -1402,40 +1420,44 @@ export default function DashboardPage() {
               </Dialog>
             </div>
           ) : activeTab === 'users' ? (
-            <div className="space-y-8">
-              <div className="flex items-center gap-4"><Users className="w-8 h-8 text-primary" /><h2 className="text-3xl font-black uppercase">Identity Management</h2></div>
-              <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-10">
+              <div className="flex items-center gap-4 pb-8 border-b border-border/50">
+                <div className="w-12 h-12 rounded-[1.5rem] bg-primary/10 flex items-center justify-center text-primary">
+                  <Users className="w-6 h-6" />
+                </div>
+                <h2 className="text-3xl font-black uppercase tracking-tighter">Identity Management</h2>
+              </div>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {users?.map((u) => (
-                  <Card key={u.id} className="p-6 rounded-3xl bg-muted/30 border-border flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0 border border-border">
-                        {u.profileImageUrl ? (
-                          <img src={u.profileImageUrl} className="w-full h-full object-cover" alt="Profile" />
-                        ) : (
-                          <UserCircle className="w-6 h-6 text-primary" />
-                        )}
+                  <Card key={u.id} className="p-8 rounded-[2.5rem] bg-muted/30 border-border flex flex-col gap-8 hover:bg-muted/50 transition-all shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-[1.5rem] bg-primary/10 flex items-center justify-center overflow-hidden shrink-0 border border-border shadow-inner">
+                          {u.profileImageUrl ? (
+                            <img src={u.profileImageUrl} className="w-full h-full object-cover" alt="Profile" />
+                          ) : (
+                            <UserCircle className="w-8 h-8 text-primary/40" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-black uppercase text-base truncate tracking-tight">{u.username || 'Anonymous Hub Node'}</h4>
+                          <p className="text-[10px] uppercase text-muted-foreground truncate mb-2">{u.email}</p>
+                          <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/20 text-primary px-3 py-0.5 rounded-full">
+                            {u.role || 'user'}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <h4 className="font-black uppercase text-sm truncate">{u.username || 'Anonymous Hub Node'}</h4>
-                        <p className="text-[9px] uppercase text-muted-foreground truncate">{u.email}</p>
-                        <Badge variant="outline" className="mt-1 text-[8px] font-black uppercase border-primary/20 text-primary">
-                          {u.role || 'user'}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-4">
-                      <div className="flex items-center gap-2 bg-black/20 p-2 rounded-xl border border-border">
-                        <Label className="text-[8px] font-black uppercase px-2 text-muted-foreground">Clearance:</Label>
+                      <div className="flex flex-col items-end gap-1">
+                        <Label className="text-[8px] font-black uppercase text-muted-foreground mr-1">Global Clearance</Label>
                         <Select 
                           disabled={(u.email && HUB_OWNERS.includes(u.email.toLowerCase())) || (u.role === 'super_admin' && !isSuperAdmin)} 
                           value={u.role || 'user'} 
                           onValueChange={(val) => updateDocumentNonBlocking(doc(db, 'users', u.id), { role: val })}
                         >
-                          <SelectTrigger className="h-8 w-28 text-[9px] font-black uppercase rounded-lg border-none bg-transparent hover:bg-white/5">
+                          <SelectTrigger className="h-10 w-32 text-[10px] font-black uppercase rounded-xl border border-border bg-background/50">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="rounded-xl border-border bg-background">
                             <SelectItem value="user">User</SelectItem>
                             <SelectItem value="developer">Developer</SelectItem>
                             <SelectItem value="admin">Admin</SelectItem>
@@ -1443,9 +1465,12 @@ export default function DashboardPage() {
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
 
-                      {(u.role === 'developer' || u.role === 'admin') && (
-                        <div className="flex flex-wrap gap-2">
+                    {(u.role === 'developer' || u.role === 'admin') && (
+                      <div className="pt-6 border-t border-border/50">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground mb-4 block tracking-widest">Protocol Permissions</Label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           {[
                             { id: 'canManageRoms', label: 'ROMs' },
                             { id: 'canManageModules', label: 'Mods' },
@@ -1456,10 +1481,12 @@ export default function DashboardPage() {
                             { id: 'canPromoteToDeveloper', label: 'Promote Dev' },
                             { id: 'canManageUsers', label: 'Manage Users' },
                           ].map((perm) => (
-                            <div key={perm.id} className="flex items-center gap-2 bg-black/10 px-3 py-1.5 rounded-lg border border-border/50">
-                              <Label className="text-[7px] font-black uppercase text-muted-foreground">{perm.label}</Label>
+                            <div key={perm.id} className="flex flex-col gap-2 bg-background/30 p-3 rounded-2xl border border-border/50 hover:border-primary/20 transition-all">
+                              <Label className="text-[7px] font-black uppercase text-muted-foreground leading-tight h-5">
+                                {perm.label}
+                              </Label>
                               <Switch 
-                                className="scale-75 data-[state=checked]:bg-primary"
+                                className="scale-75 origin-left data-[state=checked]:bg-primary"
                                 checked={!!u[perm.id]} 
                                 onCheckedChange={(checked) => updateDocumentNonBlocking(doc(db, 'users', u.id), { [perm.id]: checked })} 
                                 disabled={!isSuperAdmin && !(isAdminRole && profile?.canManageUsers)}
@@ -1467,65 +1494,93 @@ export default function DashboardPage() {
                             </div>
                           ))}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </Card>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="space-y-8">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                <div className="space-y-1">
-                  <h2 className="text-3xl font-black uppercase">{menuItems.find(i => i.id === activeTab)?.label}</h2>
-                  <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Managing Global Registry Node</p>
+            <div className="space-y-10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-border/50">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-[1.5rem] bg-primary/10 flex items-center justify-center text-primary">
+                    {menuItems.find(i => i.id === activeTab)?.icon}
+                  </div>
+                  <h2 className="text-3xl font-black uppercase tracking-tighter">
+                    Manage {menuItems.find(i => i.id === activeTab)?.label}
+                  </h2>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="relative group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     <Input 
-                      placeholder="SEARCH REGISTRY..." 
-                      className="h-12 w-48 sm:w-64 pl-12 rounded-xl bg-muted/50 border-border font-black text-[10px] uppercase"
+                      placeholder="Neural scan..." 
+                      className="h-12 w-full md:w-64 bg-muted/50 rounded-2xl pl-12 border-border focus:ring-primary/20 font-black text-[10px] uppercase"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <Button variant="outline" onClick={() => setIsBulkDialogOpen(true)} className="h-12 rounded-xl border-primary text-primary uppercase text-[10px]">Bulk Import</Button>
-                  <Button onClick={() => setIsAddDialogOpen(true)} className="h-12 rounded-xl bg-primary text-white uppercase text-[10px]">Add New</Button>
+                  <Button variant="outline" onClick={() => setIsBulkDialogOpen(true)} className="h-12 rounded-2xl border-primary/20 text-primary hover:bg-primary/5 uppercase font-black text-[10px] tracking-widest px-6">
+                    <CloudLightning className="w-4 h-4 mr-2" /> Bulk Sync
+                  </Button>
+                  <Button onClick={() => setIsAddDialogOpen(true)} className="h-12 rounded-2xl bg-primary text-white font-black uppercase text-[10px] tracking-widest px-6 shadow-lg shadow-primary/20">
+                    <Plus className="w-4 h-4 mr-2" /> Add Protocol
+                  </Button>
                 </div>
               </div>
 
-              <div className={cn("grid grid-cols-1", activeTab !== 'history' && "gap-2")}>
-                {activeTab === 'history' ? (
-                  <MessageHistory />
-                ) : (
-                  filteredItems(getActiveCollectionData()).map((item) => (
-                    <motion.div layout key={item.id} className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl bg-card border border-border gap-4">
-                    <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
-                      <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden flex items-center justify-center shrink-0 border border-border/10">
-                        {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <Package className="w-6 h-6 text-muted-foreground" />}
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="font-black uppercase text-sm truncate">{item.name || item.title}</h4>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/10 text-primary py-0">
-                            {item.developer || 'Admin'}
-                          </Badge>
-                          <span className="text-[8px] text-muted-foreground uppercase font-medium">{item.androidVersion ? `Android ${item.androidVersion}` : activeTab}</span>
+              {activeTab === 'history' ? (
+                <MessageHistory />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredItems(getActiveCollectionData()).map((item) => (
+                    <motion.div 
+                      layout 
+                      key={item.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileHover={{ y: -4 }}
+                      className="group"
+                    >
+                      <Card className="p-6 rounded-[2rem] bg-card border-border hover:border-primary/30 transition-all flex flex-col justify-between h-full shadow-lg hover:shadow-primary/5">
+                        <div className="flex items-start gap-4 mb-6">
+                          <div className="w-16 h-16 rounded-2xl bg-muted overflow-hidden flex items-center justify-center shrink-0 border border-border/10 group-hover:scale-105 transition-transform">
+                            {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <Package className="w-8 h-8 text-muted-foreground" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-black uppercase text-sm truncate mb-1">{item.name || item.title}</h4>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/10 text-primary px-2 py-0">
+                                {item.developer || 'Admin'}
+                              </Badge>
+                              {item.androidVersion && (
+                                <Badge variant="secondary" className="text-[7px] font-black uppercase px-2 py-0">
+                                  Android {item.androidVersion}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 self-end sm:self-center">
-                      <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); setIsEditDialogOpen(true); }} className="text-primary hover:bg-primary/10 rounded-xl">
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(activeTab === 'guides' ? 'tutorials' : activeTab === 'root' ? 'root-packages' : activeTab, item.id)} className="text-red-600 hover:bg-red-600/10 rounded-xl">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                )))}
-              </div>
+
+                        <div className="pt-6 border-t border-border/50 flex items-center justify-between">
+                          <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+                            Ref: {item.id.substring(0, 8)}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); setIsEditDialogOpen(true); }} className="w-10 h-10 text-primary hover:bg-primary/10 rounded-xl transition-all">
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(activeTab === 'guides' ? 'tutorials' : activeTab === 'root' ? 'root-packages' : activeTab, item.id)} className="w-10 h-10 text-red-600 hover:bg-red-600/10 rounded-xl transition-all">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </motion.div>

@@ -7,17 +7,31 @@ import { SearchProvider } from '@/context/SearchContext';
 import { NotificationProvider } from '@/components/NotificationProvider';
 import { RootContent } from '@/components/layout/RootContent';
 
+import { Space_Grotesk, Inter, Source_Code_Pro } from 'next/font/google';
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
+
+const sourceCodePro = Source_Code_Pro({
+  subsets: ['latin'],
+  variable: '--font-mono',
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${spaceGrotesk.variable} ${inter.variable} ${sourceCodePro.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -34,7 +48,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body style={{backgroundColor:'var(--bg)', color:'white'}} className="font-body antialiased selection:bg-primary/30 min-h-screen overflow-x-hidden">
+      <body className="font-body antialiased min-h-screen overflow-x-hidden transition-colors duration-300">
         <FirebaseClientProvider>
           <SearchProvider>
             <ThemeProvider>

@@ -60,9 +60,9 @@ import { collection, doc, increment, updateDoc } from 'firebase/firestore';
 import { logActivity } from '@/lib/activity-logger';
 import { initializeFirebase } from '@/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
 
 const { auth } = initializeFirebase();
+import { cn } from '@/lib/utils';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -113,7 +113,6 @@ const parseLinks = (text: string) => {
     return part;
   });
 };
-
 
 const initiateDownload = async (db: any, collectionName: string, id: string, url: string, name: string) => {
   if (!url) {
@@ -178,16 +177,7 @@ export function ROMCard({ rom }: { rom: any }) {
   const db = useFirestore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  
-  const handleDownload = async (id: string, url: string, name: string) => {
-    setIsDownloading(true);
-    try {
-      await initiateDownload(db, 'roms', id, url, name);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
   const screenshots = Array.isArray(rom.screenshots) ? rom.screenshots : [];
   const hasScreenshots = screenshots.length > 0;
@@ -270,14 +260,8 @@ export function ROMCard({ rom }: { rom: any }) {
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-2">
-                    <Button 
-                      variant="outline" 
-                      disabled={isDownloading}
-                      onClick={() => handleDownload(rom.id, rom.downloadUrl, rom.name)} 
-                      className="w-full h-12 justify-start px-6 rounded-2xl border-white/10 bg-white/5 text-[10px] font-black uppercase gap-4 hover:bg-white/10"
-                    >
-                      {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LinkIcon className="w-4 h-4" />} 
-                      {isDownloading ? 'Acquiring...' : 'Primary Acquisition Protocol'}
+                    <Button variant="outline" onClick={() => initiateDownload(db, 'roms', rom.id, rom.downloadUrl, rom.name)} className="w-full h-12 justify-start px-6 rounded-2xl border-white/10 bg-white/5 text-[10px] font-black uppercase gap-4 hover:bg-white/10">
+                      <LinkIcon className="w-4 h-4" /> Primary Acquisition Protocol
                     </Button>
                   </div>
                 </motion.div>
@@ -294,12 +278,10 @@ export function ROMCard({ rom }: { rom: any }) {
                {isExpanded ? 'Show Less' : 'Read Details'}
              </Button>
              <Button 
-                onClick={() => handleDownload(rom.id, rom.downloadUrl, rom.name)} 
-                disabled={isDownloading}
+                onClick={() => initiateDownload(db, 'roms', rom.id, rom.downloadUrl, rom.name)} 
                 className="w-full h-12 rounded-full bg-primary text-primary-foreground font-black uppercase text-[11px] tracking-widest shadow-md hover:scale-[1.02] active:scale-[0.98] transition-transform"
              >
-               {isDownloading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-               {isDownloading ? 'Syncing...' : 'Download ROM'}
+               Download ROM
              </Button>
           </div>
       </Card>
@@ -337,17 +319,6 @@ export function ROMGrid({ roms, isLoading }: { roms: any[], isLoading: boolean }
 function ModuleCard({ mod }: { mod: any }) {
   const db = useFirestore();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      await initiateDownload(db, 'modules', mod.id, mod.downloadUrl, mod.name);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   return (
     <motion.div variants={cardVariants} whileHover={{ y: -5 }}>
       <Card className="glass border-border p-8 rounded-[2.5rem] hover:bg-card/20 flex flex-col justify-between h-full transition-all">
@@ -360,14 +331,7 @@ function ModuleCard({ mod }: { mod: any }) {
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="text-[8px] font-black uppercase text-muted-foreground">{isExpanded ? 'LESS' : 'MORE'}</Button>
           <motion.div whileTap={{ scale: 0.9 }}>
-            <Button 
-              onClick={handleDownload} 
-              disabled={isDownloading}
-              size="icon" 
-              className="w-10 h-10 rounded-xl bg-primary"
-            >
-              {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            </Button>
+            <Button onClick={() => initiateDownload(db, 'modules', mod.id, mod.downloadUrl, mod.name)} size="icon" className="w-10 h-10 rounded-xl bg-primary"><Download className="w-4 h-4" /></Button>
           </motion.div>
         </div>
       </Card>
@@ -390,17 +354,6 @@ export function ModuleGrid({ modules, isLoading }: { modules: any[], isLoading: 
 function ModApkCard({ apk }: { apk: any }) {
   const db = useFirestore();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      await initiateDownload(db, 'mod-apks', apk.id, apk.downloadUrl, apk.downloadFileName || apk.name);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   return (
     <motion.div variants={cardVariants} whileHover={{ y: -5 }}>
       <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">
@@ -415,14 +368,7 @@ function ModApkCard({ apk }: { apk: any }) {
           <div className="text-[9px] font-black uppercase text-muted-foreground mb-4">{apk.downloadCount || 0} DOWNLOADS</div>
           <div className="mt-auto flex gap-3">
             <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
-              <Button 
-                onClick={handleDownload} 
-                disabled={isDownloading}
-                className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]"
-              >
-                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {isDownloading ? 'Acquiring...' : 'Download'}
-              </Button>
+              <Button onClick={() => initiateDownload(db, 'mod-apks', apk.id, apk.downloadUrl, apk.downloadFileName || apk.name)} className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]">Download</Button>
             </motion.div>
             <motion.div whileTap={{ scale: 0.95 }}>
               <Button variant="outline" onClick={() => setIsExpanded(!isExpanded)} className={cn("w-12 h-12 rounded-2xl", isExpanded && "bg-primary text-white")}>
@@ -448,68 +394,46 @@ export function ModApkGrid({ apks, isLoading }: { apks: any[], isLoading: boolea
   );
 }
 
-function RootCard({ pkg }: { pkg: any }) {
-  const db = useFirestore();
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      await initiateDownload(db, 'root-packages', pkg.id, pkg.downloadUrl, pkg.name);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  return (
-    <motion.div variants={cardVariants} whileHover={{ y: -5 }}>
-      <Card className="glass border-border p-10 rounded-[3rem] transition-all">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary"><Zap className="w-7 h-7" /></div>
-            <h3 className="text-xl font-black uppercase tracking-tight text-foreground">{pkg.name}</h3>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="text-[9px] font-black uppercase text-muted-foreground">{pkg.downloadCount || 0} DOWNLOADS</div>
-            <motion.div whileTap={{ scale: 0.95 }}>
-              <Button 
-                onClick={handleDownload} 
-                disabled={isDownloading}
-                className="rounded-xl bg-primary h-12 px-6 text-[10px] font-black uppercase"
-              >
-                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {isDownloading ? 'Acquiring...' : 'Get Package'}
-              </Button>
-            </motion.div>
-          </div>
-        </div>
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="steps" className="border-border">
-            <AccordionTrigger className="text-[10px] font-black uppercase tracking-widest text-muted-foreground py-2">Installation Steps</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-3 pt-4">
-                {pkg.steps?.map((step: string, i: number) => (
-                  <div key={i} className="flex gap-4 items-start">
-                    <span className="text-xs font-black text-primary">{i + 1}.</span>
-                    <div className="text-xs text-muted-foreground whitespace-pre-wrap">{parseLinks(step)}</div>
-                  </div>
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </Card>
-    </motion.div>
-  );
-}
-
 export function RootGrid({ packages, isLoading }: { packages: any[], isLoading: boolean }) {
+  const db = useFirestore();
   if (isLoading) return <LoadingState label="Retrieving Root Protocols..." />;
   return (
     <section id="root" className="py-32 max-w-7xl mx-auto px-6">
       <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-20">ROOT <span className="text-blue-600">PROTOCOL</span></h2>
       <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.05 }}>
-        {packages.map((pkg) => <RootCard key={pkg.id} pkg={pkg} />)}
+        {packages.map((pkg) => (
+          <motion.div key={pkg.id} variants={cardVariants} whileHover={{ y: -5 }}>
+            <Card className="glass border-border p-10 rounded-[3rem] transition-all">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary"><Zap className="w-7 h-7" /></div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-foreground">{pkg.name}</h3>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="text-[9px] font-black uppercase text-muted-foreground">{pkg.downloadCount || 0} DOWNLOADS</div>
+                  <motion.div whileTap={{ scale: 0.95 }}>
+                    <Button onClick={() => initiateDownload(db, 'root-packages', pkg.id, pkg.downloadUrl, pkg.name)} className="rounded-xl bg-primary h-12 px-6 text-[10px] font-black uppercase">Get Package</Button>
+                  </motion.div>
+                </div>
+              </div>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="steps" className="border-border">
+                  <AccordionTrigger className="text-[10px] font-black uppercase tracking-widest text-muted-foreground py-2">Installation Steps</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3 pt-4">
+                      {pkg.steps?.map((step: string, i: number) => (
+                        <div key={i} className="flex gap-4 items-start">
+                          <span className="text-xs font-black text-primary">{i + 1}.</span>
+                          <div className="text-xs text-muted-foreground whitespace-pre-wrap">{parseLinks(step)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </Card>
+          </motion.div>
+        ))}
       </motion.div>
     </section>
   );
@@ -568,51 +492,29 @@ export function GuideGrid({ guides, isLoading }: { guides: any[], isLoading: boo
   );
 }
 
-function WallpaperCard({ wall }: { wall: any }) {
-  const db = useFirestore();
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      await initiateDownload(db, 'live-wallpapers', wall.id, wall.downloadUrl, wall.name);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  return (
-    <motion.div variants={cardVariants} whileHover={{ y: -5 }}>
-      <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">
-        <div className="relative aspect-[9/16] w-full bg-background/50 overflow-hidden">
-          <img src={wall.previewUrl || wall.imageUrl} alt="Live" className="w-full h-full object-cover" />
-          <div className="absolute bottom-8 left-8 right-8">
-            <h3 className="text-xl font-black uppercase tracking-tight text-foreground mb-2">{wall.name || "Sky Visual"}</h3>
-            <div className="text-[9px] font-black uppercase text-muted-foreground mb-4">{wall.downloadCount || 0} DOWNLOADS</div>
-            <motion.div whileTap={{ scale: 0.95 }}>
-              <Button 
-                onClick={handleDownload} 
-                disabled={isDownloading}
-                className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]"
-              >
-                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {isDownloading ? 'Syncing...' : 'Sync Visual'}
-              </Button>
-            </motion.div>
-          </div>
-        </div>
-      </Card>
-    </motion.div>
-  );
-}
-
 export function LiveWallpaperGrid({ wallpapers, isLoading }: { wallpapers: any[], isLoading: boolean }) {
+  const db = useFirestore();
   if (isLoading) return <LoadingState label="Rendering Visuals..." />;
   return (
     <section id="live-wallpapers" className="py-32 max-w-7xl mx-auto px-6">
       <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-20">LIVE <span className="text-blue-600">VISUALS</span></h2>
       <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.05 }}>
-        {wallpapers?.map((wall) => <WallpaperCard key={wall.id} wall={wall} />)}
+        {wallpapers?.map((wall) => (
+          <motion.div key={wall.id} variants={cardVariants} whileHover={{ y: -5 }}>
+            <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">
+              <div className="relative aspect-[9/16] w-full bg-background/50 overflow-hidden">
+                <img src={wall.previewUrl || wall.imageUrl} alt="Live" className="w-full h-full object-cover" />
+                <div className="absolute bottom-8 left-8 right-8">
+                  <h3 className="text-xl font-black uppercase tracking-tight text-foreground mb-2">{wall.name || "Sky Visual"}</h3>
+                  <div className="text-[9px] font-black uppercase text-muted-foreground mb-4">{wall.downloadCount || 0} DOWNLOADS</div>
+                  <motion.div whileTap={{ scale: 0.95 }}>
+                    <Button onClick={() => initiateDownload(db, 'live-wallpapers', wall.id, wall.downloadUrl, wall.name)} className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]">Sync Visual</Button>
+                  </motion.div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        ))}
       </motion.div>
     </section>
   );

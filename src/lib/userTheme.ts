@@ -3,6 +3,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db, auth } from "@/firebase/config";
 
 export const loadUserTheme = async (uid: string) => {
+  if (typeof document === 'undefined') return false;
+  
   const ref = doc(db, "users", uid);
   const snap = await getDoc(ref);
 
