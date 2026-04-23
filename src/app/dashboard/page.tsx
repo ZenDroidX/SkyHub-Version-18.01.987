@@ -100,7 +100,7 @@ import { themes } from '@/lib/themes';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { MessageHistory } from '@/components/admin/MessageHistory';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { extractRoms, extractRomsFromRawHtml } from '@/ai/flows/extract-roms-flow';
+import { extractFromContent } from '@/ai/client-ai';
 import { motion, AnimatePresence } from 'framer-motion';
 import SuperAdminPanel from '@/components/admin/SuperAdminPanel';
 
@@ -401,18 +401,37 @@ export default function DashboardPage() {
   };
 
   const [editingExtractedItem, setEditingExtractedItem] = useState<{item: any, index: number} | null>(null);
+  const [aiTargetDestination, setAiTargetDestination] = useState('roms');
 
   const handleBulkExtract = async () => {
     if (!bulkUrl && !bulkHtml && !bulkTelegramText) return;
     setIsExtracting(true);
     setSelectedExtractedIndices([]);
     try {
-      let result = bulkUrl ? await extractRoms({ url: bulkUrl }) : await extractRomsFromRawHtml({ html: bulkHtml || bulkTelegramText });
+      let content = bulkHtml || bulkTelegramText;
+      if (bulkUrl) {
+         try {
+           const resp = await fetch(bulkUrl);
+           content = await resp.text();
+         } catch (e) {
+           throw new Error("CORS Alert: Cannot scan remote URL directly from browser. Please paste the HTML/Telegram content into the pulse buffer.");
+         }
+      }
+
+      const result = await extractFromContent(content || '', bulkUrl || 'pulse-buffer');
       const items = result.roms || [];
       setExtractedItems(items);
-      setSelectedExtractedIndices(items.map((_, i) => i));
-      toast({ title: "Extraction Complete" });
-    } catch (e: any) { toast({ variant: "destructive", title: "Failed", description: e.message }); }
+      setSelectedExtractedIndices(items.map((_: any, i: number) => i));
+      
+      // Log Activity
+      if (auth.currentUser) {
+        logActivity(db, auth.currentUser.uid, `AI Extraction: Found ${items.length} records from ${bulkUrl || 'uploaded file'}`);
+      }
+
+      toast({ title: "Neural Extraction Success", description: `Identified ${items.length} records.` });
+    } catch (e: any) { 
+      toast({ variant: "destructive", title: "Neural Pulse Failed", description: e.message }); 
+    }
     finally { setIsExtracting(false); }
   };
 
@@ -420,9 +439,9 @@ export default function DashboardPage() {
     if (items.length === 0) return;
     setIsAdding(true);
     try {
-      let collectionName = activeTab;
-      if (activeTab === 'guides') collectionName = 'tutorials';
-      else if (activeTab === 'root') collectionName = 'root-packages';
+      let collectionName = activeTab === 'ai-extract' ? aiTargetDestination : activeTab;
+      if (collectionName === 'guides') collectionName = 'tutorials';
+      else if (collectionName === 'root') collectionName = 'root-packages';
       
       const validCollections = ['roms', 'modules', 'mod-apks', 'wallpapers', 'live-wallpapers', 'tutorials', 'root-packages'];
       if (!validCollections.includes(collectionName)) {
@@ -439,6 +458,12 @@ export default function DashboardPage() {
           createdAt: serverTimestamp(),
         });
       }
+
+      // Log Activity
+      if (auth.currentUser) {
+        logActivity(db, auth.currentUser.uid, `Imported ${items.length} items to ${collectionName} via AI`);
+      }
+
       setExtractedItems([]);
       setIsBulkDialogOpen(false);
       toast({ title: "Registry Synchronized", description: `${items.length} items have been added to ${collectionName}.` });
@@ -452,28 +477,32 @@ export default function DashboardPage() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    console.log("Neural Pulse: File link established.", file.name, file.size);
     setIsExtracting(true);
     setExtractedItems([]); // Clear previous items immediately for feedback
     setSelectedExtractedIndices([]);
     const reader = new FileReader();
     reader.onload = async (event) => {
       const html = event.target?.result as string;
+      console.log("Neural Pulse: Transmitting data packet of size", html.length);
       try {
-        const result = await extractRomsFromRawHtml({ html });
+        const result = await extractFromContent(html);
+        console.log("Neural Pulse: AI response received.", result);
         const items = result.roms || [];
         setExtractedItems(items);
         if (items.length > 0) {
-          toast({ title: "Neural Extraction Success", description: `Found ${items.length} resources in index.html.` });
+          toast({ title: "Neural Extraction Success", description: `Found ${items.length} resources in ${file.name}.` });
           setSelectedExtractedIndices(items.map((_, i) => i));
         } else {
-          toast({ variant: "destructive", title: "No Data Found", description: "The AI could not identify structured resources in this file." });
+          toast({ variant: "destructive", title: "No Data Found", description: "The AI could not identify structured resources. Check if the file contains readable links." });
         }
       } catch (e: any) {
+        console.error("Neural Pulse: Error in transmission.", e);
         toast({ variant: "destructive", title: "Neural Error", description: e.message });
       } finally {
         setIsExtracting(false);
         // Reset input so same file can be uploaded again
-        e.target.value = '';
+        if (e.target) e.target.value = '';
       }
     };
     reader.readAsText(file);
@@ -1251,7 +1280,7 @@ export default function DashboardPage() {
                       <div className="mt-8 pt-6 border-t border-border/50 space-y-4">
                          <div className="flex items-center justify-between mb-2">
                              <Label className="text-[9px] font-black uppercase tracking-widest">Target Destination</Label>
-                             <Select value={activeTab === 'ai-extract' ? 'roms' : activeTab} onValueChange={(v) => setActiveTab(v)}>
+                             <Select value={aiTargetDestination} onValueChange={(v) => setAiTargetDestination(v)}>
                                 <SelectTrigger className="w-32 h-8 text-[9px] font-black uppercase rounded-lg">
                                   <SelectValue />
                                 </SelectTrigger>
@@ -1350,6 +1379,20 @@ export default function DashboardPage() {
                               setEditingExtractedItem({ ...editingExtractedItem, item: { ...editingExtractedItem.item, description: e.target.value } });
                             }}
                             className="bg-muted rounded-xl min-h-[100px]"
+                          />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Mirror Links (One per line)</Label>
+                          <Textarea 
+                            value={editingExtractedItem.item.mirrors?.join('\n') || ''} 
+                            onChange={(e) => {
+                              const newItems = [...extractedItems];
+                              newItems[editingExtractedItem.index].mirrors = e.target.value.split('\n').filter(Boolean);
+                              setExtractedItems(newItems);
+                              setEditingExtractedItem({ ...editingExtractedItem, item: { ...editingExtractedItem.item, mirrors: e.target.value.split('\n').filter(Boolean) } });
+                            }}
+                            placeholder="Add redundant mirrors..."
+                            className="bg-muted rounded-xl min-h-[80px]"
                           />
                        </div>
                        <Button onClick={() => setEditingExtractedItem(null)} className="w-full bg-primary font-black uppercase text-[10px] h-12 rounded-xl mt-4">Confirm Correction</Button>
@@ -1656,8 +1699,15 @@ export default function DashboardPage() {
                             {selectedExtractedIndices.includes(idx) && <Check className="w-3 h-3" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                             <p className="text-[10px] font-bold uppercase truncate">{item.name}</p>
-                             <p className="text-[7px] text-muted-foreground truncate">{item.downloadUrl}</p>
+                             <div className="flex items-center gap-2 mb-1">
+                                <p className="text-[10px] font-bold uppercase truncate">{item.name}</p>
+                                {item.version && <span className="text-[6px] bg-muted px-1 rounded font-mono border border-border">v{item.version}</span>}
+                                {item.size && <span className="text-[6px] text-blue-500 font-bold">{item.size}</span>}
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <p className="text-[7px] text-muted-foreground truncate flex-1">{item.downloadUrl}</p>
+                                {item.updated && <span className="text-[6px] opacity-70 italic whitespace-nowrap">{item.updated}</span>}
+                             </div>
                           </div>
                         </div>
                       ))}
@@ -1743,8 +1793,13 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-2 mb-1">
                                <p className="text-[10px] font-bold uppercase truncate">{item.name}</p>
                                {item.androidVersion && <Badge variant="outline" className="text-[7px] py-0 h-4 border-primary/20">A{item.androidVersion}</Badge>}
+                               {item.version && <span className="text-[6px] bg-muted px-1 rounded font-mono border border-border">v{item.version}</span>}
                             </div>
-                            <p className="text-[8px] text-muted-foreground line-clamp-1">{item.downloadUrl}</p>
+                            <div className="flex items-center gap-2">
+                               <p className="text-[8px] text-muted-foreground truncate flex-1">{item.downloadUrl}</p>
+                               {item.size && <span className="text-[6px] text-blue-500 font-bold">{item.size}</span>}
+                               {item.updated && <span className="text-[6px] opacity-70 italic whitespace-nowrap">{item.updated}</span>}
+                            </div>
                           </div>
                         </div>
                       ))}

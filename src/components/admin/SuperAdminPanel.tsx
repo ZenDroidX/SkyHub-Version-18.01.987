@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import ThemeManager from './ThemeManager';
 import LayoutManager from './LayoutManager';
 import { Slideshow } from '@/components/sections/slideshow';
+import { ActivityLog } from './ActivityLog';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function SuperAdminPanel() {
@@ -88,6 +89,17 @@ export default function SuperAdminPanel() {
         date: new Date().toISOString(),
         url: settings.socialLinks.telegramChannel,
       });
+      
+      // Log Activity
+      try {
+        const { auth } = initializeFirebase();
+        if (auth.currentUser) {
+          logActivity(db, auth.currentUser.uid, `Added post: ${content.substring(0, 30)}...`);
+        }
+      } catch (e) {
+        console.error("Log error:", e);
+      }
+
       toast({ title: 'Post added!', description: 'The post has been added to the site.' });
     } catch (error: any) {
       toast({ title: 'Failed to add post', description: error.message, variant: 'destructive' });
@@ -152,6 +164,17 @@ export default function SuperAdminPanel() {
   const handleSave = async () => {
     if (settingsRef && formData) {
       await updateDoc(settingsRef, formData);
+      
+      // Log Activity
+      try {
+        const { auth } = initializeFirebase();
+        if (auth.currentUser) {
+          logActivity(db, auth.currentUser.uid, `Updated global settings`);
+        }
+      } catch (e) {
+        console.error("Log error:", e);
+      }
+
       toast({ title: 'Settings updated!', description: 'Your changes have been applied successfully.' });
     }
   };
@@ -179,6 +202,7 @@ export default function SuperAdminPanel() {
           <TabsTrigger value="social">Social Links</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="posts">Posts</TabsTrigger>
+          <TabsTrigger value="activity">Activity Log</TabsTrigger>
           <TabsTrigger value="layout">Layout</TabsTrigger>
         </TabsList>
 
@@ -446,6 +470,10 @@ export default function SuperAdminPanel() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="activity">
+           <ActivityLog />
         </TabsContent>
 
         <TabsContent value="layout">

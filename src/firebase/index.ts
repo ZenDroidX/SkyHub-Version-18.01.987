@@ -41,7 +41,13 @@ export function initializeFirebase() {
       try {
         // Attempt to reach the server to verify connectivity
         await getDocFromServer(doc(firestoreInstance!, 'test', 'connection'));
+        console.log("Firestore: Neural connection established.");
       } catch (error: any) {
+        if (error?.code === 'permission-denied') {
+          console.log("Firestore: Handshake successful (server reached, but test document access restricted).");
+          return;
+        }
+
         if (error?.code === 'unavailable' || error?.message?.includes('the client is offline')) {
           console.warn("Firestore [UNAVAILABLE]: The backend is currently unreachable. The application will continue in OFFLINE mode using local cache.");
           errorEmitter.emit('connectivity-error', { 
@@ -49,7 +55,7 @@ export function initializeFirebase() {
             code: error?.code || 'unavailable'
           });
         } else {
-          console.error("Firestore connectivity error:", error);
+          console.error("Firestore connectivity pulse failed:", error);
         }
       }
     })();

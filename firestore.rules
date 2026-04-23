@@ -136,5 +136,10 @@ service cloud.firestore {
     match /otp_codes/{email} {
       allow read, write: if true;
     }
+
+    // Connectivity Test Node
+    match /test/connection {
+      allow read: if true;
+    }
   }
 }

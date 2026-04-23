@@ -43,19 +43,30 @@ const extractResourcesPrompt = ai.definePrompt({
   output: { schema: ExtractResourcesOutputSchema },
   prompt: `You are an expert AI Architect specializing in the Android customization ecosystem (ROMs, Wallpapers, Modules).
   
-I will provide you with content from a webpage or a Telegram community post (Source: {{{url}}}).
+I will provide you with content from a webpage (potentially a raw index.html directory listing), a structured article, or a Telegram community post (Source: {{{url}}}).
 
-Your task is to identify and extract structured data for Custom ROMs or Android modules.
+Your task is to identify and extract structured data for Custom ROMs, Android modules, or kernels.
 Look for:
-- ROM Name (e.g., Xiaomi HyperOS, LineageOS, Pixel Experience)
-- Build Version (e.g., 3.0.4.0.WNUINXM)
+- ROM or Project Name (e.g., Xiaomi HyperOS, LineageOS, Pixel Experience, Evolution X, Magisk Module Name)
+- Build Version or Data (e.g., 3.0.4.0.WNUINXM, stable, beta, official)
 - Android OS Version (e.g., Android 14, 15, 16)
-- Download Mirrors (G drive, Mega, Mediafire)
-- Screenshots or Gallery links
-- Addons or Supplements (Magisk, GApps, Camera ports)
+- Primary Download Links:
+  - If the content is an index.html file listing, treat files ending in .zip, .img, .bin, .tar.gz, .tgz as potential download links.
+  - Look for external mirror links (G drive, Mega, Mediafire, SourceForge, GitHub releases).
+- Screenshots or Gallery links (links to images or sites like imgur, postimg).
+- Addons or Supplements (Magisk, GApps, Firmware, Camera ports).
 
-Analyze the content deeply. If you see "Download - [Link]", extract the link. If you see "Screenshot - [Link]", extract the link into the screenshots array.
-If the content is a Telegram post, identify the "Official Stock Rom" or "Moded Rom" context and summarize the features into the description.
+STRATEGY FOR RAW HTML (index.html):
+- If you see a list of files, convert each likely ROM/Module file into an entity.
+- Clean the filenames to create readable "names". (e.g., "LineageOS-21.0-20231225-OFFICIAL-vayu.zip" -> Name: "LineageOS 21.0 Official")
+- Use the filename parts to infer Android version or device name.
+
+STRATEGY FOR TELEGRAM/ARTICLES:
+- Identify the "Official Stock Rom" or "Moded Rom" context.
+- Summarize features, changelogs, and installation steps into the description.
+- Extract any mentioned "Download" or "Mirror" links.
+
+IMPORTANT: Ensure every extracted item has a valid 'downloadUrl'. If multiple mirrors exist, put the best one in 'downloadUrl' and others in 'mirrors'.
 
 Content:
 {{{html}}}`,
@@ -114,6 +125,7 @@ const extractRomsFromRawHtmlFlow = ai.defineFlow(
     outputSchema: ExtractResourcesOutputSchema,
   },
   async (input) => {
+    console.log('Incoming extraction request. HTML length:', input.html.length);
     const cleanedHtml = input.html
         .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gmi, '')
         .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gmi, '')
