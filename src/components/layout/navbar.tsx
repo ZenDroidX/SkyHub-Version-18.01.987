@@ -79,12 +79,12 @@ export function Navbar() {
   const upiId = settings?.upiId || DEFAULT_DONATION_CONFIG.upiId;
   const upiAmount = settings?.upiAmount || DEFAULT_DONATION_CONFIG.upiAmount;
   const qrUrl = settings?.qrImageUrl || DEFAULT_DONATION_CONFIG.qrImageUrl;
-  const logoUrl = globalSettings?.logoUrl || DEFAULT_DONATION_CONFIG.logoUrl;
+  const qrLink = globalSettings?.supportLinks?.qrLink || qrUrl;
+  const brandName = globalSettings?.brandName || 'SKY HUB';
+  const logoUrl = settings?.logoUrl || DEFAULT_DONATION_CONFIG.logoUrl;
   const telegramChannel = globalSettings?.socialLinks?.telegramChannel || DEFAULT_DONATION_CONFIG.telegramChannelUrl;
   const telegramDiscussion = globalSettings?.socialLinks?.discussion || DEFAULT_DONATION_CONFIG.telegramDiscussionUrl;
   const paymentLink = globalSettings?.supportLinks?.paymentLink || DEFAULT_DONATION_CONFIG.paymentLink;
-  const qrLink = globalSettings?.supportLinks?.qrLink || qrUrl;
-  const brandName = globalSettings?.brandName || 'SKY HUB';
 
   const isSuperAdmin = user?.email && HUB_OWNERS.includes(user.email.toLowerCase());
   const isAdminRole = profile?.role === 'admin';

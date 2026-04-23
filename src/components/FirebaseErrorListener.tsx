@@ -3,37 +3,41 @@
 import { useState, useEffect } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { toast } from '@/hooks/use-toast';
 
 /**
- * An invisible component that listens for globally emitted 'permission-error' events.
- * It throws any received error to be caught by Next.js's global-error.tsx.
+ * An invisible component that listens for globally emitted Firebase events.
+ * - Throws 'permission-error' to be caught by global-error.tsx.
+ * - Displays a toast for 'connectivity-error'.
  */
 export function FirebaseErrorListener() {
-  // Use the specific error type for the state for type safety.
-  const [error, setError] = useState<FirestorePermissionError | null>(null);
+  const [permError, setPermError] = useState<FirestorePermissionError | null>(null);
 
   useEffect(() => {
-    // The callback now expects a strongly-typed error, matching the event payload.
-    const handleError = (error: FirestorePermissionError) => {
-      // Set error in state to trigger a re-render.
-      setError(error);
+    const handlePermissionError = (error: FirestorePermissionError) => {
+      setPermError(error);
     };
 
-    // The typed emitter will enforce that the callback for 'permission-error'
-    // matches the expected payload type (FirestorePermissionError).
-    errorEmitter.on('permission-error', handleError);
+    const handleConnectivityError = (payload: { message: string, code: string }) => {
+      toast({
+        variant: "destructive",
+        title: "Network Pulse Weak",
+        description: payload.message,
+      });
+    };
 
-    // Unsubscribe on unmount to prevent memory leaks.
+    errorEmitter.on('permission-error', handlePermissionError);
+    errorEmitter.on('connectivity-error', handleConnectivityError);
+
     return () => {
-      errorEmitter.off('permission-error', handleError);
+      errorEmitter.off('permission-error', handlePermissionError);
+      errorEmitter.off('connectivity-error', handleConnectivityError);
     };
   }, []);
 
-  // On re-render, if an error exists in state, throw it.
-  if (error) {
-    throw error;
+  if (permError) {
+    throw permError;
   }
 
-  // This component renders nothing.
   return null;
 }

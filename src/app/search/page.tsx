@@ -24,7 +24,7 @@ export default function SearchResultsPage() {
 
   return (
     <div className="py-32 max-w-7xl mx-auto px-6">
-      <h1 className="text-4xl font-black uppercase tracking-tighter mb-10">Search Results for "{searchQuery}"</h1>
+      <h1 className="text-4xl font-black uppercase tracking-tighter mb-10">Search Results for &quot;{searchQuery}&quot;</h1>
       {filteredRoms.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredRoms.map(rom => <ROMCard key={rom.id} rom={rom} />)}

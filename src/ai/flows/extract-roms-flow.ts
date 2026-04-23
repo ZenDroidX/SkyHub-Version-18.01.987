@@ -77,21 +77,32 @@ const extractRomsFlow = ai.defineFlow(
   },
   async (input) => {
     try {
+      console.log('Fetching URL:', input.url);
       const response = await fetch(input.url);
       const html = await response.text();
       
       const cleanedHtml = html
         .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gmi, '')
         .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gmi, '')
+        .replace(/<svg\b[^>]*>([\s\S]*?)<\/svg>/gmi, '')
         .replace(/<!--[\s\S]*?-->/g, '')
-        .substring(0, 50000);
+        .substring(0, 250000); // Massive context window for large index.html files
 
-      const { output } = await extractResourcesPrompt({ html: cleanedHtml, url: input.url });
+      console.log('Sending extraction prompt for URL:', input.url, 'Cleaned HTML size:', cleanedHtml.length);
+      const { output } = await ai.generate(extractResourcesPrompt({ 
+        html: cleanedHtml, 
+        url: input.url 
+      }));
+      
+      console.log('Extraction sequence complete. Found:', output?.roms?.length || 0, 'items.');
+      if (output?.roms) {
+        output.roms.forEach((r, i) => console.log(`Item ${i+1}: ${r.name} - ${r.downloadUrl}`));
+      }
       
       return output || { roms: [] };
     } catch (error: any) {
-      console.error('Extraction failed:', error);
-      throw new Error(`Failed to extract data from ${input.url}: ${error.message}`);
+      console.error('Extraction failed for URL:', input.url, error);
+      throw new Error(`Failed to extract data: ${error.message}`);
     }
   }
 );
@@ -106,10 +117,20 @@ const extractRomsFromRawHtmlFlow = ai.defineFlow(
     const cleanedHtml = input.html
         .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gmi, '')
         .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gmi, '')
+        .replace(/<svg\b[^>]*>([\s\S]*?)<\/svg>/gmi, '')
         .replace(/<!--[\s\S]*?-->/g, '')
-        .substring(0, 50000);
+        .substring(0, 250000);
 
-    const { output } = await extractResourcesPrompt({ html: cleanedHtml, url: input.url || 'local-input' });
+    console.log('Sending extraction prompt for raw HTML/Telegram content... Size:', cleanedHtml.length);
+    const { output } = await ai.generate(extractResourcesPrompt({ 
+      html: cleanedHtml, 
+      url: input.url || 'local-input' 
+    }));
+    
+    console.log('Extraction sequence complete. Found:', output?.roms?.length || 0, 'items.');
+    if (output?.roms) {
+      output.roms.forEach((r, i) => console.log(`Item ${i+1}: ${r.name} - ${r.downloadUrl}`));
+    }
     return output || { roms: [] };
   }
 );

@@ -171,6 +171,7 @@ export default function DashboardPage() {
   const [bulkAddLinks, setBulkAddLinks] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedItems, setExtractedItems] = useState<any[]>([]);
+  const [selectedExtractedIndices, setSelectedExtractedIndices] = useState<number[]>([]);
 
   const [isBootAnimationEnabled, setIsBootAnimationEnabled] = useState(true);
   const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -196,6 +197,7 @@ export default function DashboardPage() {
   const [heroTitle, setHeroTitle] = useState('');
   const [heroSubtitle, setHeroSubtitle] = useState('');
   const [faviconUrl, setFaviconUrl] = useState('');
+  const [romRequestFormUrl, setRomRequestFormUrl] = useState('');
   const [slideshowRounding, setSlideshowRounding] = useState(2); // 2rem default
   const [isSavingLayout, setIsSavingLayout] = useState(false);
 
@@ -231,6 +233,7 @@ export default function DashboardPage() {
       setHeroTitle(globalSettings.heroTitle || '');
       setHeroSubtitle(globalSettings.heroSubtitle || '');
       setFaviconUrl(globalSettings.faviconUrl || '');
+      setRomRequestFormUrl(globalSettings.romRequestFormUrl || '');
       setSlideshowRounding(globalSettings.slideshowRounding ?? 2);
     }
   }, [globalSettings]);
@@ -240,6 +243,13 @@ export default function DashboardPage() {
       setIsBootAnimationEnabled(settings.loading.enabled !== false);
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (!isBulkDialogOpen) {
+      setExtractedItems([]);
+      setSelectedExtractedIndices([]);
+    }
+  }, [isBulkDialogOpen]);
 
   const menuItems = [
     { id: 'profile', label: 'My Profile', icon: <UserCircle className="w-4 h-4" />, permission: 'all' },
@@ -254,6 +264,7 @@ export default function DashboardPage() {
     { id: 'live-wallpapers', label: 'Live Visuals', icon: <Video className="w-4 h-4" />, permission: 'canManageWallpapers' },
     { id: 'wallpapers', label: 'Wallpaper', icon: <ImageIcon className="w-4 h-4" />, permission: 'canManageWallpapers' },
     { id: 'visuals', label: 'Visual Protocols', icon: <Monitor className="w-4 h-4" />, permission: 'adminOnly' },
+    { id: 'ai-extract', label: 'AI Terminal', icon: <Bot className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'telegram-sync', label: 'Telegram Sync', icon: <CloudLightning className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'history', label: 'Message History', icon: <MessageCircle className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'users', label: 'Identity Mgmt', icon: <Users className="w-4 h-4" />, permission: 'adminOnly' },
@@ -374,6 +385,7 @@ export default function DashboardPage() {
         brandName,
         heroTitle,
         heroSubtitle,
+        romRequestFormUrl,
         gradient: useGradient ? { colors: gradientColors, direction: gradientDirection } : null,
         faviconUrl,
         slideshowRounding
@@ -388,50 +400,36 @@ export default function DashboardPage() {
     }
   };
 
+  const [editingExtractedItem, setEditingExtractedItem] = useState<{item: any, index: number} | null>(null);
+
   const handleBulkExtract = async () => {
     if (!bulkUrl && !bulkHtml && !bulkTelegramText) return;
     setIsExtracting(true);
+    setSelectedExtractedIndices([]);
     try {
       let result = bulkUrl ? await extractRoms({ url: bulkUrl }) : await extractRomsFromRawHtml({ html: bulkHtml || bulkTelegramText });
-      setExtractedItems(result.roms || []);
+      const items = result.roms || [];
+      setExtractedItems(items);
+      setSelectedExtractedIndices(items.map((_, i) => i));
       toast({ title: "Extraction Complete" });
     } catch (e: any) { toast({ variant: "destructive", title: "Failed", description: e.message }); }
     finally { setIsExtracting(false); }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsExtracting(true);
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const html = event.target?.result as string;
-      try {
-        const result = await extractRomsFromRawHtml({ html });
-        setExtractedItems(result.roms || []);
-        toast({ title: "Extraction Complete" });
-      } catch (e: any) {
-        toast({ variant: "destructive", title: "Failed", description: e.message });
-      } finally {
-        setIsExtracting(false);
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleSaveBulk = async () => {
-    if (extractedItems.length === 0) return;
+  const saveItemsToDatabase = async (items: any[]) => {
+    if (items.length === 0) return;
     setIsAdding(true);
-    toast({ title: "Bulk Sync Initiated", description: "Adding items to the registry..." });
     try {
-      // Determine collection based on active tab
-      let collectionName = 'roms';
-      if (activeTab === 'wallpapers') collectionName = 'wallpapers';
-      else if (activeTab === 'live-wallpapers') collectionName = 'live-wallpapers';
-      else if (activeTab === 'mod-apks') collectionName = 'mod-apks';
-      else if (activeTab === 'modules') collectionName = 'modules';
+      let collectionName = activeTab;
+      if (activeTab === 'guides') collectionName = 'tutorials';
+      else if (activeTab === 'root') collectionName = 'root-packages';
+      
+      const validCollections = ['roms', 'modules', 'mod-apks', 'wallpapers', 'live-wallpapers', 'tutorials', 'root-packages'];
+      if (!validCollections.includes(collectionName)) {
+        collectionName = 'roms';
+      }
 
-      for (const item of extractedItems) {
+      for (const item of items) {
         const collRef = collection(db, collectionName);
         const newDocRef = doc(collRef);
         await setDoc(newDocRef, {
@@ -443,12 +441,46 @@ export default function DashboardPage() {
       }
       setExtractedItems([]);
       setIsBulkDialogOpen(false);
-      toast({ title: "Bulk Sync Successful", description: `${extractedItems.length} items have been added to ${collectionName}.` });
+      toast({ title: "Registry Synchronized", description: `${items.length} items have been added to ${collectionName}.` });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Sync Failed", description: e.message });
     } finally {
       setIsAdding(false);
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsExtracting(true);
+    setExtractedItems([]); // Clear previous items immediately for feedback
+    setSelectedExtractedIndices([]);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const html = event.target?.result as string;
+      try {
+        const result = await extractRomsFromRawHtml({ html });
+        const items = result.roms || [];
+        setExtractedItems(items);
+        if (items.length > 0) {
+          toast({ title: "Neural Extraction Success", description: `Found ${items.length} resources in index.html.` });
+          setSelectedExtractedIndices(items.map((_, i) => i));
+        } else {
+          toast({ variant: "destructive", title: "No Data Found", description: "The AI could not identify structured resources in this file." });
+        }
+      } catch (e: any) {
+        toast({ variant: "destructive", title: "Neural Error", description: e.message });
+      } finally {
+        setIsExtracting(false);
+        // Reset input so same file can be uploaded again
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleSaveBulk = async () => {
+    await saveItemsToDatabase(extractedItems);
   };
 
   const handleBulkLinkSync = async () => {
@@ -782,6 +814,33 @@ export default function DashboardPage() {
                       placeholder="Enter favicon URL"
                     />
                   </div>
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Hero Title</Label>
+                    <Textarea 
+                      value={heroTitle} 
+                      onChange={(e) => setHeroTitle(e.target.value)}
+                      className="h-24 rounded-2xl bg-black/40 border-border" 
+                      placeholder="Enter hero title (use \n for line breaks)"
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Hero Subtitle</Label>
+                    <Textarea 
+                      value={heroSubtitle} 
+                      onChange={(e) => setHeroSubtitle(e.target.value)}
+                      className="h-32 rounded-2xl bg-black/40 border-border" 
+                      placeholder="Enter hero subtitle"
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">ROM Request Form Link</Label>
+                    <Input 
+                      value={romRequestFormUrl} 
+                      onChange={(e) => setRomRequestFormUrl(e.target.value)}
+                      className="h-14 rounded-2xl bg-black/40 border-border" 
+                      placeholder="e.g. https://formspree.io/f/your_id"
+                    />
+                  </div>
                   {faviconUrl && (
                     <div className="space-y-4">
                       <Label className="text-[10px] font-black uppercase tracking-widest">Favicon Preview</Label>
@@ -1016,6 +1075,288 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </Card>
+            </div>
+          ) : activeTab === 'ai-extract' ? (
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="space-y-1">
+                  <h2 className="text-3xl font-black uppercase flex items-center gap-3">
+                    <Bot className="w-8 h-8 text-primary animate-pulse" />
+                    AI EXTRACTION TERMINAL
+                  </h2>
+                  <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Global Neural Processing Unit Active</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <Card className="p-8 rounded-[2.5rem] bg-card border-border border-2 overflow-hidden relative">
+                   <div className="absolute top-0 right-0 p-8 opacity-10">
+                      <CloudLightning className="w-32 h-32 text-primary" />
+                   </div>
+                   <div className="relative z-10 space-y-6">
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-black uppercase tracking-wider">Source Analysis Node</Label>
+                        <Tabs defaultValue="file" className="w-full">
+                          <TabsList className="grid w-full grid-cols-3 h-12 bg-muted p-1 rounded-xl">
+                            <TabsTrigger value="file" className="text-[9px] uppercase font-black">Index.html</TabsTrigger>
+                            <TabsTrigger value="telegram" className="text-[9px] uppercase font-black">Telegram AI</TabsTrigger>
+                            <TabsTrigger value="url" className="text-[9px] uppercase font-black">URL Scan</TabsTrigger>
+                          </TabsList>
+                          
+                          <TabsContent value="file" className="mt-6 space-y-6">
+                            <div className="flex flex-col items-center justify-center min-h-[250px] border-2 border-dashed border-border rounded-3xl p-8 hover:border-primary/50 transition-colors group cursor-pointer relative" onClick={() => document.getElementById('ai-file-upload')?.click()}>
+                              <input type="file" accept=".html" onChange={handleFileUpload} className="hidden" id="ai-file-upload" />
+                              <div className="flex flex-col items-center gap-6">
+                                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                  <Upload className="w-10 h-10 text-primary" />
+                                </div>
+                                <div className="space-y-2 text-center">
+                                  <h3 className="font-black uppercase text-sm tracking-widest">DRAG OR CLICK TO UPLOAD</h3>
+                                  <p className="text-[10px] text-muted-foreground uppercase max-w-[200px] leading-relaxed mx-auto italic">
+                                    Upload index.html for neural registry extraction
+                                  </p>
+                                </div>
+                                {isExtracting && (
+                                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-3xl backdrop-blur-sm">
+                                    <div className="flex flex-col items-center gap-4">
+                                      <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                                      <span className="text-[10px] font-black uppercase tracking-widest animate-pulse">Processing index.html...</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="telegram" className="mt-6 space-y-4">
+                            <Label className="text-[9px] font-black uppercase ml-1">Paste Broadcast Content</Label>
+                            <Textarea 
+                              value={bulkTelegramText} 
+                              onChange={(e) => setBulkTelegramText(e.target.value)} 
+                              placeholder="PASTE TELEGRAM POST CONTENT..." 
+                              className="min-h-[200px] bg-muted rounded-2xl p-6 text-[11px] font-mono border-border"
+                            />
+                            <Button 
+                              onClick={handleBulkExtract} 
+                              disabled={isExtracting} 
+                              className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl"
+                            >
+                              {isExtracting ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <Zap className="w-5 h-5 mr-2" />}
+                              EXTRACT FROM TELEGRAM
+                            </Button>
+                          </TabsContent>
+
+                          <TabsContent value="url" className="mt-6 space-y-4">
+                            <Label className="text-[9px] font-black uppercase ml-1">Remote Endpoint URL</Label>
+                            <Input 
+                              value={bulkUrl} 
+                              onChange={(e) => setBulkUrl(e.target.value)} 
+                              placeholder="HTTPS://EXTERNAL-SOURCE.COM/INDEX.HTML" 
+                              className="h-14 bg-muted rounded-2xl px-6 font-mono text-[11px]"
+                            />
+                            <Button 
+                              onClick={handleBulkExtract} 
+                              disabled={isExtracting} 
+                              className="w-full h-14 bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded-2xl"
+                            >
+                              {isExtracting ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <Globe className="w-5 h-5 mr-2" />}
+                              SCAN REMOTE ENDPOINT
+                            </Button>
+                          </TabsContent>
+                        </Tabs>
+                      </div>
+                   </div>
+                </Card>
+
+                <Card className="p-8 rounded-[2.5rem] bg-card border-border border-2 flex flex-col h-full min-h-[600px]">
+                   <div className="flex items-center justify-between border-b border-border/50 pb-6 mb-6">
+                      <div className="space-y-1">
+                        <h4 className="font-black uppercase text-sm tracking-widest flex items-center gap-2">
+                           <List className="w-5 h-5 text-primary" />
+                           Extraction Buffer
+                        </h4>
+                        <p className="text-[9px] text-muted-foreground uppercase">{extractedItems.length} resources identified</p>
+                      </div>
+                      <div className="flex gap-2">
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           className="text-[8px] font-black uppercase rounded-xl h-10 px-4"
+                           onClick={() => setSelectedExtractedIndices(
+                             selectedExtractedIndices.length === extractedItems.length ? [] : extractedItems.map((_, i) => i)
+                           )}
+                         >
+                           {selectedExtractedIndices.length === extractedItems.length ? "Deselect" : "Select All"}
+                         </Button>
+                      </div>
+                   </div>
+
+                   <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide">
+                      {extractedItems.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center opacity-30 gap-4 text-center">
+                           <Bot className="w-20 h-20" />
+                           <p className="text-[10px] font-black uppercase tracking-widest max-w-[150px]">Waiting for input pulses...</p>
+                        </div>
+                      ) : (
+                        extractedItems.map((item, idx) => (
+                          <motion.div 
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: idx * 0.05 }}
+                            key={idx} 
+                            className={cn(
+                              "group p-5 rounded-2xl border transition-all flex items-center gap-4 cursor-pointer relative overflow-hidden",
+                              selectedExtractedIndices.includes(idx) ? "bg-primary/10 border-primary/50 ring-1 ring-primary/20" : "bg-muted/30 border-border/50 hover:border-primary/30"
+                            )}
+                            onClick={() => {
+                              if (selectedExtractedIndices.includes(idx)) {
+                                setSelectedExtractedIndices(selectedExtractedIndices.filter(i => i !== idx));
+                              } else {
+                                setSelectedExtractedIndices([...selectedExtractedIndices, idx]);
+                              }
+                            }}
+                          >
+                            <div className={cn(
+                              "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors shrink-0",
+                              selectedExtractedIndices.includes(idx) ? "bg-primary border-primary text-white" : "border-muted-foreground/30"
+                            )}>
+                              {selectedExtractedIndices.includes(idx) && <Check className="w-4 h-4" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                               <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-[11px] font-black uppercase truncate">{item.name}</p>
+                                  {item.androidVersion && <Badge variant="outline" className="text-[8px] py-0 h-4 border-primary/30 text-primary font-black uppercase">A{item.androidVersion}</Badge>}
+                               </div>
+                               <div className="flex items-center gap-3">
+                                  <p className="text-[8px] text-muted-foreground font-mono truncate flex-1">{item.downloadUrl}</p>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="w-6 h-6 rounded-md hover:bg-primary/20"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingExtractedItem({ item, index: idx });
+                                    }}
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </Button>
+                               </div>
+                            </div>
+                          </motion.div>
+                        ))
+                      )}
+                   </div>
+
+                   {extractedItems.length > 0 && (
+                      <div className="mt-8 pt-6 border-t border-border/50 space-y-4">
+                         <div className="flex items-center justify-between mb-2">
+                             <Label className="text-[9px] font-black uppercase tracking-widest">Target Destination</Label>
+                             <Select value={activeTab === 'ai-extract' ? 'roms' : activeTab} onValueChange={(v) => setActiveTab(v)}>
+                                <SelectTrigger className="w-32 h-8 text-[9px] font-black uppercase rounded-lg">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                   <SelectItem value="roms" className="text-[9px] font-black uppercase">ROMs</SelectItem>
+                                   <SelectItem value="modules" className="text-[9px] font-black uppercase">Modules</SelectItem>
+                                   <SelectItem value="mod-apks" className="text-[9px] font-black uppercase">APKs</SelectItem>
+                                   <SelectItem value="wallpapers" className="text-[9px] font-black uppercase">Walls</SelectItem>
+                                   <SelectItem value="live-wallpapers" className="text-[9px] font-black uppercase">Live Walls</SelectItem>
+                                </SelectContent>
+                             </Select>
+                         </div>
+                         <Button 
+                           onClick={() => saveItemsToDatabase(extractedItems.filter((_, i) => selectedExtractedIndices.includes(i)))} 
+                           disabled={isAdding || selectedExtractedIndices.length === 0} 
+                           className="w-full h-14 bg-primary text-primary-foreground font-black uppercase text-[11px] tracking-[0.2em] rounded-2xl shadow-xl shadow-primary/30"
+                         >
+                           {isAdding ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <Activity className="w-5 h-5 mr-2" />}
+                           INITIALIZE SYNC ({selectedExtractedIndices.length})
+                         </Button>
+                      </div>
+                   )}
+                </Card>
+              </div>
+
+              {/* Editing Extracted Item Dialog */}
+              <Dialog open={!!editingExtractedItem} onOpenChange={() => setEditingExtractedItem(null)}>
+                {editingExtractedItem && (
+                  <DialogContent className="bg-card rounded-[2.5rem] p-8 max-w-xl border-border">
+                    <DialogHeader>
+                      <DialogTitle className="uppercase font-black">Neural Correction Node</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Resource Identity</Label>
+                          <Input 
+                            value={editingExtractedItem.item.name} 
+                            onChange={(e) => {
+                              const newItems = [...extractedItems];
+                              newItems[editingExtractedItem.index].name = e.target.value;
+                              setExtractedItems(newItems);
+                              setEditingExtractedItem({ ...editingExtractedItem, item: { ...editingExtractedItem.item, name: e.target.value } });
+                            }}
+                            className="bg-muted rounded-xl"
+                          />
+                       </div>
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-black uppercase tracking-widest">OS Base (Android)</Label>
+                             <Input 
+                               value={editingExtractedItem.item.androidVersion || ''} 
+                               onChange={(e) => {
+                                 const newItems = [...extractedItems];
+                                 newItems[editingExtractedItem.index].androidVersion = e.target.value;
+                                 setExtractedItems(newItems);
+                                 setEditingExtractedItem({ ...editingExtractedItem, item: { ...editingExtractedItem.item, androidVersion: e.target.value } });
+                               }}
+                               className="bg-muted rounded-xl"
+                             />
+                          </div>
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-black uppercase tracking-widest">Version Pin</Label>
+                             <Input 
+                               value={editingExtractedItem.item.version || ''} 
+                               onChange={(e) => {
+                                 const newItems = [...extractedItems];
+                                 newItems[editingExtractedItem.index].version = e.target.value;
+                                 setExtractedItems(newItems);
+                                 setEditingExtractedItem({ ...editingExtractedItem, item: { ...editingExtractedItem.item, version: e.target.value } });
+                               }}
+                               className="bg-muted rounded-xl"
+                             />
+                          </div>
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Transmission Endpoint (URL)</Label>
+                          <Input 
+                            value={editingExtractedItem.item.downloadUrl} 
+                            onChange={(e) => {
+                              const newItems = [...extractedItems];
+                              newItems[editingExtractedItem.index].downloadUrl = e.target.value;
+                              setExtractedItems(newItems);
+                              setEditingExtractedItem({ ...editingExtractedItem, item: { ...editingExtractedItem.item, downloadUrl: e.target.value } });
+                            }}
+                            className="bg-muted rounded-xl"
+                          />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Feature Summary</Label>
+                          <Textarea 
+                            value={editingExtractedItem.item.description || ''} 
+                            onChange={(e) => {
+                              const newItems = [...extractedItems];
+                              newItems[editingExtractedItem.index].description = e.target.value;
+                              setExtractedItems(newItems);
+                              setEditingExtractedItem({ ...editingExtractedItem, item: { ...editingExtractedItem.item, description: e.target.value } });
+                            }}
+                            className="bg-muted rounded-xl min-h-[100px]"
+                          />
+                       </div>
+                       <Button onClick={() => setEditingExtractedItem(null)} className="w-full bg-primary font-black uppercase text-[10px] h-12 rounded-xl mt-4">Confirm Correction</Button>
+                    </div>
+                  </DialogContent>
+                )}
+              </Dialog>
             </div>
           ) : activeTab === 'users' ? (
             <div className="space-y-8">
@@ -1273,14 +1614,63 @@ export default function DashboardPage() {
                 {isExtracting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Analyze Transmission'}
               </Button>
               {extractedItems.length > 0 && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 max-h-[200px] overflow-y-auto">
-                    <p className="text-[8px] font-black uppercase text-blue-400 mb-2">Detected Protocols:</p>
-                    {extractedItems.map((item, idx) => (
-                      <div key={idx} className="text-[9px] text-muted-foreground uppercase mb-1">• {item.name} ({item.androidVersion || 'N/A'})</div>
-                    ))}
+                <div className="space-y-6">
+                  <div className="p-6 rounded-[2rem] bg-muted/30 border border-border space-y-4">
+                    <div className="flex items-center justify-between mb-4 border-b border-border/50 pb-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                         <Zap className="w-4 h-4 text-primary" />
+                         Extracted Items ({extractedItems.length})
+                      </h4>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-[8px] uppercase font-black"
+                        onClick={() => setSelectedExtractedIndices(
+                          selectedExtractedIndices.length === extractedItems.length ? [] : extractedItems.map((_, i) => i)
+                        )}
+                      >
+                        {selectedExtractedIndices.length === extractedItems.length ? "Deselect All" : "Select All"}
+                      </Button>
+                    </div>
+                    
+                    <div className="grid gap-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
+                      {extractedItems.map((item, idx) => (
+                        <div 
+                          key={idx} 
+                          className={cn(
+                            "group p-4 rounded-xl border transition-all flex items-center gap-4 cursor-pointer",
+                            selectedExtractedIndices.includes(idx) ? "bg-primary/10 border-primary/50" : "bg-black/20 border-border/50 hover:border-primary/30"
+                          )}
+                          onClick={() => {
+                            if (selectedExtractedIndices.includes(idx)) {
+                              setSelectedExtractedIndices(selectedExtractedIndices.filter(i => i !== idx));
+                            } else {
+                              setSelectedExtractedIndices([...selectedExtractedIndices, idx]);
+                            }
+                          }}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded-md border flex items-center justify-center transition-colors",
+                            selectedExtractedIndices.includes(idx) ? "bg-primary border-primary text-white" : "border-muted-foreground/30"
+                          )}>
+                            {selectedExtractedIndices.includes(idx) && <Check className="w-3 h-3" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                             <p className="text-[10px] font-bold uppercase truncate">{item.name}</p>
+                             <p className="text-[7px] text-muted-foreground truncate">{item.downloadUrl}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <Button 
+                      onClick={() => saveItemsToDatabase(extractedItems.filter((_, i) => selectedExtractedIndices.includes(i)))} 
+                      disabled={isAdding || selectedExtractedIndices.length === 0} 
+                      className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl"
+                    >
+                      {isAdding ? <Loader2 className="animate-spin w-5 h-5" /> : `Import ${selectedExtractedIndices.length} Selected`}
+                    </Button>
                   </div>
-                  <Button onClick={handleSaveBulk} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Sync {extractedItems.length} Resources</Button>
                 </div>
               )}
             </TabsContent>
@@ -1289,20 +1679,86 @@ export default function DashboardPage() {
               <Button onClick={handleBulkLinkSync} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Initialize Link Sync Series</Button>
             </TabsContent>
             <TabsContent value="file" className="space-y-6">
-              <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-muted rounded-2xl p-6">
+              <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-muted rounded-2xl p-6 text-center">
                 <input type="file" accept=".html" onChange={handleFileUpload} className="hidden" id="html-upload" />
-                <Label htmlFor="html-upload" className="cursor-pointer bg-muted py-3 px-6 rounded-xl text-[10px] uppercase font-black tracking-widest">Select index.html</Label>
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <CloudLightning className="w-8 h-8 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-black uppercase text-sm tracking-widest leading-none">Automated Index Pulse</h3>
+                    <p className="text-[9px] text-muted-foreground uppercase max-w-[250px] leading-relaxed mx-auto">
+                      Upload an index.html file to trigger global extraction and real-time registry synchronization.
+                    </p>
+                  </div>
+                  <Label htmlFor="html-upload" className="cursor-pointer bg-primary text-white py-4 px-8 rounded-xl text-[10px] uppercase font-black tracking-widest hover:scale-105 transition-transform">
+                    {isExtracting ? 'Analyzing...' : 'Pulse Upload'}
+                  </Label>
+                </div>
               </div>
+              
               {extractedItems.length > 0 && (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 max-h-[200px] overflow-y-auto">
-                      <p className="text-[8px] font-black uppercase text-blue-400 mb-2">Detected Protocols from File:</p>
+                <div className="space-y-6">
+                  <div className="p-6 rounded-[2rem] bg-muted/30 border border-border space-y-4">
+                    <div className="flex items-center justify-between mb-4 border-b border-border/50 pb-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                         <Zap className="w-4 h-4 text-primary" />
+                         Extracted Resources ({extractedItems.length})
+                      </h4>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-[8px] uppercase font-black"
+                        onClick={() => setSelectedExtractedIndices(
+                          selectedExtractedIndices.length === extractedItems.length ? [] : extractedItems.map((_, i) => i)
+                        )}
+                      >
+                        {selectedExtractedIndices.length === extractedItems.length ? "Deselect All" : "Select All"}
+                      </Button>
+                    </div>
+                    
+                    <div className="grid gap-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
                       {extractedItems.map((item, idx) => (
-                        <div key={idx} className="text-[9px] text-muted-foreground uppercase mb-1">• {item.name} ({item.androidVersion || 'N/A'})</div>
+                        <div 
+                          key={idx} 
+                          className={cn(
+                            "group p-4 rounded-xl border transition-all flex items-center gap-4 cursor-pointer",
+                            selectedExtractedIndices.includes(idx) ? "bg-primary/10 border-primary/50" : "bg-black/20 border-border/50 hover:border-primary/30"
+                          )}
+                          onClick={() => {
+                            if (selectedExtractedIndices.includes(idx)) {
+                              setSelectedExtractedIndices(selectedExtractedIndices.filter(i => i !== idx));
+                            } else {
+                              setSelectedExtractedIndices([...selectedExtractedIndices, idx]);
+                            }
+                          }}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded-md border flex items-center justify-center transition-colors",
+                            selectedExtractedIndices.includes(idx) ? "bg-primary border-primary text-white" : "border-muted-foreground/30"
+                          )}>
+                            {selectedExtractedIndices.includes(idx) && <Check className="w-3 h-3" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                               <p className="text-[10px] font-bold uppercase truncate">{item.name}</p>
+                               {item.androidVersion && <Badge variant="outline" className="text-[7px] py-0 h-4 border-primary/20">A{item.androidVersion}</Badge>}
+                            </div>
+                            <p className="text-[8px] text-muted-foreground line-clamp-1">{item.downloadUrl}</p>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                    <Button onClick={handleSaveBulk} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Sync {extractedItems.length} Resources</Button>
+
+                    <Button 
+                      onClick={() => saveItemsToDatabase(extractedItems.filter((_, i) => selectedExtractedIndices.includes(i)))} 
+                      disabled={isAdding || selectedExtractedIndices.length === 0} 
+                      className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl shadow-lg shadow-primary/20"
+                    >
+                      {isAdding ? <Loader2 className="animate-spin w-5 h-5" /> : `Import ${selectedExtractedIndices.length} Resources to Registry`}
+                    </Button>
                   </div>
+                </div>
               )}
             </TabsContent>
             <TabsContent value="bulk" className="space-y-6">

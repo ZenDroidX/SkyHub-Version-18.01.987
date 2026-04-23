@@ -107,7 +107,7 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-medium leading-relaxed tracking-tight whitespace-pre-line"
         >
-          Sky-platform development command center. Unleash your device's potential.
+          Sky-platform development command center. Unleash your device&apos;s potential.
         </motion.p>
 
         {/* Translucent Network Bar Protocol with Lightning Effects */}

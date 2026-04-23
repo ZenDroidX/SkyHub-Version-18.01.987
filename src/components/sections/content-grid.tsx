@@ -54,7 +54,7 @@ import {
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import Link from 'next/link';
 import { toast } from '@/hooks/use-toast';
-import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
+import { useCollection, useMemoFirebase, useFirestore, useDoc } from '@/firebase';
 import { useSearch } from '@/context/SearchContext';
 import { collection, doc, increment, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -511,17 +511,24 @@ export function LiveWallpaperGrid({ wallpapers, isLoading }: { wallpapers: any[]
 export function RequestROM() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [variant, setVariant] = useState('sky');
+  const db = useFirestore();
+
+  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const { data: globalSettings } = useDoc(settingsRef);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const formUrl = globalSettings?.romRequestFormUrl || "https://formspree.io/f/xgvzvelv";
+    
     setIsSubmitting(true);
     const form = e.currentTarget;
     const formData = new FormData(form);
     formData.append('variant', variant);
     try {
-      const response = await fetch("https://formspree.io/f/xgvzvelv", { method: "POST", body: formData, headers: { 'Accept': 'application/json' } });
+      const response = await fetch(formUrl, { method: "POST", body: formData, headers: { 'Accept': 'application/json' } });
       if (response.ok) { toast({ title: "Protocol Initiated" }); form.reset(); }
-    } catch (error) { toast({ variant: "destructive", title: "Error" }); }
+      else { throw new Error("Submission failed"); }
+    } catch (error) { toast({ variant: "destructive", title: "Error submitting protocol" }); }
     finally { setIsSubmitting(false); }
   };
 

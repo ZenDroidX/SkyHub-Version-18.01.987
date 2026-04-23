@@ -1,152 +1,17 @@
-
-"use client";
-
-import { loadUserTheme } from '@/lib/userTheme';
-import { auth } from '@/firebase/config';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
-import { LoadingScreen } from '@/components/ui/loading-screen';
-import { AudioLobby } from '@/components/layout/audio-lobby';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
 import ThemeProvider from '@/components/ThemeProvider';
 import { SearchProvider } from '@/context/SearchContext';
 import { NotificationProvider } from '@/components/NotificationProvider';
-
-function Countdown({ endDate }: { endDate: Date }) {
-  const [timeLeft, setTimeLeft] = useState(endDate.getTime() - Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(endDate.getTime() - Date.now());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [endDate]);
-
-  if (timeLeft <= 0) return null;
-
-  const seconds = Math.floor((timeLeft / 1000) % 60);
-  const minutes = Math.floor((timeLeft / 1000 / 60) % 60);
-  const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
-  const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-
-  return (
-    <div className="text-4xl font-mono mt-4 font-bold">
-      {days > 0 && `${days}d `}{hours.toString().padStart(2, '0')}:{minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
-    </div>
-  );
-}
-
-function RootContent({ children }: { children: React.ReactNode }) {
-  const db = useFirestore();
-  const settingsRef = useMemoFirebase(() => doc(db, 'donation', 'settings'), [db]);
-  const { data: settings, isLoading: isSettingsLoading } = useDoc(settingsRef);
-
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [hasResolvedSettings, setHasResolvedSettings] = useState(false);
-
-  // Determine if it should be enabled.
-  // We default to the registry value once loaded, or the DEFAULT config if never set.
-  const isEnabled = settings?.loading 
-    ? (settings.loading.enabled !== false)
-    : (DEFAULT_DONATION_CONFIG.loading?.enabled !== false);
-
-  const globalSettingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
-  const { data: globalSettings } = useDoc(globalSettingsRef);
-  
-  const [isMaintenanceActive, setIsMaintenanceActive] = useState(false);
-  const endTime = globalSettings?.maintenanceEndTime?.toDate();
-
-  useEffect(() => {
-    const checkMaintenance = () => {
-      const now = new Date();
-      const startTime = globalSettings?.maintenanceStartTime?.toDate();
-      const endTime = globalSettings?.maintenanceEndTime?.toDate();
-      setIsMaintenanceActive(
-        !!globalSettings?.maintenanceMode &&
-        !!startTime &&
-        !!endTime &&
-        now >= startTime &&
-        now <= endTime
-      );
-    };
-    
-    checkMaintenance();
-    const timer = setInterval(checkMaintenance, 1000);
-    return () => clearInterval(timer);
-  }, [globalSettings]);
-
-  useEffect(() => {
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        const hasUserTheme = await loadUserTheme(user.uid);
-        if (hasUserTheme) return;
-      }
-    });
-
-    // Once settings are resolved, we decide whether to show the loader or skip it.
-    if (!isSettingsLoading) {
-      setHasResolvedSettings(true);
-      if (!isEnabled) {
-        setIsInitialLoad(false);
-      }
-    }
-  }, [isSettingsLoading, isEnabled]);
-
-  // Final visibility check: 
-  // We only show the loading screen if we have resolved the settings AND it is enabled AND we are still in initial load.
-  const showLoadingScreen = isInitialLoad && hasResolvedSettings && isEnabled;
-
-  useEffect(() => {
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        const hasUserTheme = await loadUserTheme(user.uid);
-        if (hasUserTheme) return;
-      }
-    });
-  }, []);
-
-  return (
-    <>
-      {isMaintenanceActive ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 text-white p-8 text-center">
-          <div className="space-y-4">
-            <h1 className="text-4xl font-black uppercase">System Under Maintenance</h1>
-            <p className="text-xl text-muted-foreground">{globalSettings?.maintenanceMessage || 'We will be back shortly.'}</p>
-            {endTime && <Countdown endDate={endTime} />}
-          </div>
-        </div>
-      ) : showLoadingScreen && (
-        <LoadingScreen 
-          config={settings?.loading || DEFAULT_DONATION_CONFIG.loading} 
-          onFinished={() => setIsInitialLoad(false)} 
-        />
-      )}
-      <div className={showLoadingScreen || isMaintenanceActive ? 'hidden' : 'block'}>
-        {children}
-        <AudioLobby />
-      </div>
-    </>
-  );
-}
+import { RootContent } from '@/components/layout/RootContent';
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  useEffect(() => {
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        const hasUserTheme = await loadUserTheme(user.uid);
-        if (hasUserTheme) return;
-      }
-    });
-  }, []);
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

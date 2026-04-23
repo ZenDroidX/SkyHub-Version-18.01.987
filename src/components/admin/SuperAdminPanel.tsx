@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
-import { Palette } from 'lucide-react';
+import { useFirestore, useDoc, useMemoFirebase, useCollection, useStorage } from '@/firebase';
+import { doc, updateDoc, deleteDoc, query, orderBy, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Palette, Shield, User, Camera, Upload, Loader2, Save, CloudLightning } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,10 +25,18 @@ export default function SuperAdminPanel() {
   const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc(settingsRef);
 
+  const identityRef = useMemoFirebase(() => doc(db, 'donation', 'settings'), [db]);
+  const { data: identity } = useDoc(identityRef);
+  const storage = useStorage();
+
   const [formData, setFormData] = useState<any>(null);
+  const [identityData, setIdentityData] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncedPosts, setSyncedPosts] = useState<string[]>([]);
   const [isAdding, setIsAdding] = useState<Record<number, boolean>>({});
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -93,6 +102,53 @@ export default function SuperAdminPanel() {
     }
   }, [settings]);
 
+  useEffect(() => {
+    if (identity) {
+      setIdentityData(identity);
+    }
+  }, [identity]);
+
+  const handleSaveIdentity = async () => {
+    if (identityRef && identityData) {
+      try {
+        await setDoc(identityRef, identityData, { merge: true });
+        toast({ title: 'Identity updated!', description: 'Architect profile has been synchronized.' });
+      } catch (error: any) {
+        toast({ title: 'Failed to update', description: error.message, variant: 'destructive' });
+      }
+    }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAvatarPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadAvatar = async () => {
+    if (!avatarFile || !identityRef) return;
+    setIsUploadingAvatar(true);
+    try {
+      const storageRef = ref(storage, `architect/avatar_${Date.now()}`);
+      await uploadBytes(storageRef, avatarFile);
+      const url = await getDownloadURL(storageRef);
+      
+      await setDoc(identityRef, { adminAvatarUrl: url }, { merge: true });
+      setIdentityData({ ...identityData, adminAvatarUrl: url });
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      toast({ title: 'Profile picture updated!', description: 'Global identity has been refreshed.' });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Upload failed', description: e.message });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleSave = async () => {
     if (settingsRef && formData) {
       await updateDoc(settingsRef, formData);
@@ -100,7 +156,7 @@ export default function SuperAdminPanel() {
     }
   };
 
-  if (!formData) return <div>Loading...</div>;
+  if (!formData || !identityData) return <div>Loading...</div>;
 
   return (
     <div className="space-y-8">
@@ -117,6 +173,7 @@ export default function SuperAdminPanel() {
       <Tabs defaultValue="theme" className="w-full">
         <TabsList className="flex flex-nowrap overflow-x-auto w-full justify-start pb-2 mb-4 scrollbar-hide">
           <TabsTrigger value="theme">Theme</TabsTrigger>
+          <TabsTrigger value="identity">Architect Identity</TabsTrigger>
           <TabsTrigger value="slideshow">Slideshow</TabsTrigger>
           <TabsTrigger value="support">Support Links</TabsTrigger>
           <TabsTrigger value="social">Social Links</TabsTrigger>
@@ -129,6 +186,112 @@ export default function SuperAdminPanel() {
           <div className="p-8 rounded-[2.5rem] bg-card border border-border shadow-xl">
             <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Global Theme Registry</h3>
             <ThemeManager />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="identity">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="rounded-[2.5rem] border-border bg-card overflow-hidden">
+              <CardHeader className="border-b border-border/50 bg-muted/30">
+                <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" /> Profile configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em]">Lead Architect Name</Label>
+                  <Input 
+                    placeholder="Enter architect name" 
+                    value={identityData?.adminName || ''} 
+                    onChange={(e) => setIdentityData({...identityData, adminName: e.target.value})}
+                    className="h-12 rounded-xl bg-muted/50 border-border"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em]">Professional Biography</Label>
+                  <Input 
+                    placeholder="Enter short bio" 
+                    value={identityData?.adminBio || ''} 
+                    onChange={(e) => setIdentityData({...identityData, adminBio: e.target.value})}
+                    className="h-12 rounded-xl bg-muted/50 border-border"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em]">Profile Avatar URL</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="HTTPS image URL" 
+                      value={identityData?.adminAvatarUrl || ''} 
+                      onChange={(e) => setIdentityData({...identityData, adminAvatarUrl: e.target.value})}
+                      className="h-12 rounded-xl bg-muted/50 border-border flex-1"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleSaveIdentity} 
+                  className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-black uppercase text-[10px] tracking-widest"
+                >
+                  <Save className="w-4 h-4 mr-2" /> Sync Profile Data
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-[2.5rem] border-border bg-card overflow-hidden">
+              <CardHeader className="border-b border-border/50 bg-muted/30">
+                <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-primary" /> Visual Identity
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 space-y-8">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="relative group">
+                    <div className="w-32 h-32 rounded-[2rem] overflow-hidden border-2 border-border/50 bg-muted flex items-center justify-center relative">
+                      {avatarPreview || identityData?.adminAvatarUrl ? (
+                        <img 
+                          src={avatarPreview || identityData.adminAvatarUrl} 
+                          alt="Architect Preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-12 h-12 text-muted-foreground opacity-20" />
+                      )}
+                      <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white gap-2">
+                        <Upload className="w-6 h-6" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Replace</span>
+                        <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {avatarFile && (
+                    <div className="w-full space-y-2">
+                      <p className="text-[9px] font-black uppercase text-center text-primary animate-pulse">New identity pending upload</p>
+                      <Button 
+                        onClick={handleUploadAvatar} 
+                        disabled={isUploadingAvatar}
+                        className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest"
+                      >
+                        {isUploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CloudLightning className="w-4 h-4 mr-2" />}
+                        Commit New Visual
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="p-6 bg-muted/30 rounded-2xl border border-border/50 w-full">
+                    <p className="text-[8px] font-black uppercase text-muted-foreground mb-3 text-center tracking-[0.2em]">Identity Preview</p>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted">
+                        {(avatarPreview || identityData?.adminAvatarUrl) && <img src={avatarPreview || identityData.adminAvatarUrl} className="w-full h-full object-cover" />}
+                      </div>
+                      <div>
+                        <h4 className="text-[10px] font-black uppercase">{identityData?.adminName || 'Admin'}</h4>
+                        <p className="text-[9px] text-muted-foreground line-clamp-1">{identityData?.adminBio || 'No biography set'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
@@ -220,6 +383,10 @@ export default function SuperAdminPanel() {
               <div className="space-y-2">
                 <Label>Discussion Link</Label>
                 <Input value={formData.socialLinks?.discussion || ''} onChange={(e) => setFormData({...formData, socialLinks: {...formData.socialLinks, discussion: e.target.value}})} />
+              </div>
+              <div className="space-y-2">
+                <Label>ROM Request Form Link (Formspree or other)</Label>
+                <Input value={formData.romRequestFormUrl || ''} onChange={(e) => setFormData({...formData, romRequestFormUrl: e.target.value})} />
               </div>
               <Button onClick={handleSave}>Save Changes</Button>
             </CardContent>
