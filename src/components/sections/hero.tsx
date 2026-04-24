@@ -82,9 +82,9 @@ export function Hero() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-border bg-card/10 text-foreground text-[10px] font-black tracking-[0.3em] mb-12 uppercase backdrop-blur-md"
+          className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white text-[10px] font-black tracking-[0.3em] mb-8 uppercase backdrop-blur-md"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
           SKY / SKY_PRO PROTOCOL ACTIVE
         </motion.div>
         
@@ -92,10 +92,10 @@ export function Hero() {
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="text-6xl md:text-8xl lg:text-[120px] font-black tracking-tighter mb-6 flex flex-col leading-[0.85] uppercase text-foreground"
+          className="text-6xl md:text-8xl lg:text-[110px] font-black tracking-tighter mb-8 flex flex-col leading-[0.8] uppercase text-white"
         >
           {titleLines.map((line: string, index: number) => (
-            <span key={index} className={index === 0 ? "drop-shadow-2xl" : "text-muted-foreground/30 italic"}>
+            <span key={index} className={index === 0 ? "" : "text-white/20"}>
               {line}
             </span>
           ))}

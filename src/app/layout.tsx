@@ -37,10 +37,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('skyhub-theme');
-                  var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  if (!theme && supportDarkMode) theme = 'dark';
-                  if (!theme) theme = 'dark'; // Default to dark for this hub
+                  var theme = localStorage.getItem('skyhub-theme') || 'dark';
                   document.documentElement.classList.add(theme);
                 } catch (e) {}
               })();
