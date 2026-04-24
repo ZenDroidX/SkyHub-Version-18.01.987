@@ -128,15 +128,14 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
 
-  if (!context.areServicesAvailable || !context.firebaseApp || !context.firestore || !context.auth || !context.storage) {
-    throw new Error('Firebase core services not available. Check FirebaseProvider props.');
-  }
-
+  // During SSR or initial load, services might be null. 
+  // We return them as they are and let components handle missing services if needed,
+  // but we enforce the type for compatibility. components should guard against nulls where appropriate.
   return {
-    firebaseApp: context.firebaseApp,
-    firestore: context.firestore,
-    auth: context.auth,
-    storage: context.storage,
+    firebaseApp: context.firebaseApp!,
+    firestore: context.firestore!,
+    auth: context.auth!,
+    storage: context.storage!,
     user: context.user,
     isUserLoading: context.isUserLoading,
     userError: context.userError,

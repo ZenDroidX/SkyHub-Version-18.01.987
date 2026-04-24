@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirebase, useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useSearch } from '@/context/SearchContext';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
@@ -57,23 +57,21 @@ import { AuthModal } from '@/components/auth/auth-modal';
 const HUB_OWNERS = ['meinkxun@gmail.com', 'skyhubowner@gmail.com'];
 
 export function Navbar() {
-  const { user } = useUser();
-  const auth = useAuth();
-  const db = useFirestore();
+  const { user, auth, firestore: db } = useFirebase();
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => 
-    user ? doc(db, 'users', user.uid) : null
+    (user && db) ? doc(db, 'users', user.uid) : null
   , [db, user]);
   const { data: profile } = useDoc(userProfileRef);
 
-  const settingsRef = useMemoFirebase(() => doc(db, 'donation', 'settings'), [db]);
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'donation', 'settings') : null, [db]);
   const { data: settings } = useDoc(settingsRef);
 
-  const globalSettingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const globalSettingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'global') : null, [db]);
   const { data: globalSettings } = useDoc(globalSettingsRef);
 
   const upiId = settings?.upiId || DEFAULT_DONATION_CONFIG.upiId;

@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { loadUserTheme } from '@/lib/userTheme';
-import { auth } from '@/firebase/config';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { AudioLobby } from '@/components/layout/audio-lobby';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirebase, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
 
@@ -36,8 +35,8 @@ function Countdown({ endDate }: { endDate: Date }) {
 }
 
 export function RootContent({ children }: { children: React.ReactNode }) {
-  const db = useFirestore();
-  const settingsRef = useMemoFirebase(() => doc(db, 'donation', 'settings'), [db]);
+  const { auth, firestore: db } = useFirebase();
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'donation', 'settings') : null, [db]);
   const { data: settings, isLoading: isSettingsLoading } = useDoc(settingsRef);
 
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -47,17 +46,25 @@ export function RootContent({ children }: { children: React.ReactNode }) {
     ? (settings.loading.enabled !== false)
     : (DEFAULT_DONATION_CONFIG.loading?.enabled !== false);
 
-  const globalSettingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const globalSettingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'global') : null, [db]);
   const { data: globalSettings } = useDoc(globalSettingsRef);
   
   const [isMaintenanceActive, setIsMaintenanceActive] = useState(false);
-  const endTime = globalSettings?.maintenanceEndTime?.toDate();
+  const endTime = globalSettings?.maintenanceEndTime && typeof globalSettings.maintenanceEndTime.toDate === 'function' 
+    ? globalSettings.maintenanceEndTime.toDate() 
+    : null;
 
   useEffect(() => {
     const checkMaintenance = () => {
+      if (!globalSettings) return;
       const now = new Date();
-      const startTime = globalSettings?.maintenanceStartTime?.toDate();
-      const endTime = globalSettings?.maintenanceEndTime?.toDate();
+      const startTime = typeof globalSettings.maintenanceStartTime?.toDate === 'function' 
+        ? globalSettings.maintenanceStartTime.toDate() 
+        : null;
+      const endTime = typeof globalSettings.maintenanceEndTime?.toDate === 'function' 
+        ? globalSettings.maintenanceEndTime.toDate() 
+        : null;
+      
       setIsMaintenanceActive(
         !!globalSettings?.maintenanceMode &&
         !!startTime &&
@@ -73,13 +80,19 @@ export function RootContent({ children }: { children: React.ReactNode }) {
   }, [globalSettings]);
 
   useEffect(() => {
-    auth.onAuthStateChanged(async (user) => {
+    if (!auth) return;
+
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         const hasUserTheme = await loadUserTheme(user.uid);
         if (hasUserTheme) return;
       }
     });
 
+    return () => unsubscribe();
+  }, [auth]);
+
+  useEffect(() => {
     if (!isSettingsLoading) {
       setHasResolvedSettings(true);
       if (!isEnabled) {

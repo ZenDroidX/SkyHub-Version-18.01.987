@@ -1,8 +1,6 @@
 import { collection, addDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
-const { auth } = initializeFirebase();
-
 enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -25,6 +23,7 @@ interface FirestoreErrorInfo {
 }
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const { auth } = initializeFirebase();
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {

@@ -19,11 +19,12 @@ import { Slideshow } from '@/components/sections/slideshow';
 import { ActivityLog } from './ActivityLog';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logActivity } from '@/lib/activity-logger';
-import { initializeFirebase } from '@/firebase';
+import { useAuth } from '@/firebase';
 
 export default function SuperAdminPanel() {
   const { addNotification } = useNotifications();
   const db = useFirestore();
+  const auth = useAuth();
   const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc(settingsRef);
 
@@ -101,7 +102,6 @@ export default function SuperAdminPanel() {
       
       // Log Activity
       try {
-        const { auth } = initializeFirebase();
         if (auth.currentUser) {
           logActivity(db, auth.currentUser.uid, `Added post: ${content.substring(0, 30)}...`);
         }
@@ -176,7 +176,6 @@ export default function SuperAdminPanel() {
       
       // Log Activity
       try {
-        const { auth } = initializeFirebase();
         if (auth.currentUser) {
           logActivity(db, auth.currentUser.uid, `Updated global settings`);
         }
@@ -202,19 +201,20 @@ export default function SuperAdminPanel() {
         </Button>
       </div>
       
-      <Tabs defaultValue="theme" className="w-full">
-        <TabsList className="flex flex-nowrap overflow-x-auto w-full justify-start pb-2 mb-4 scrollbar-hide">
-          <TabsTrigger value="theme">Theme</TabsTrigger>
-          <TabsTrigger value="identity">Architect Identity</TabsTrigger>
-          <TabsTrigger value="slideshow">Slideshow</TabsTrigger>
-          <TabsTrigger value="support">Support Links</TabsTrigger>
-          <TabsTrigger value="social">Social Links</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="posts">Posts</TabsTrigger>
-          <TabsTrigger value="activity">Activity Log</TabsTrigger>
+      <Tabs defaultValue="theme" orientation="vertical" className="w-full flex flex-col md:flex-row gap-8">
+        <TabsList className="flex md:flex-col h-auto bg-transparent border-none gap-2 md:w-64 shrink-0 overflow-x-auto md:overflow-visible pb-4 md:pb-0 scrollbar-hide">
+          <TabsTrigger value="theme" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Theme</TabsTrigger>
+          <TabsTrigger value="identity" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Architect Identity</TabsTrigger>
+          <TabsTrigger value="slideshow" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Slideshow</TabsTrigger>
+          <TabsTrigger value="support" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Support Links</TabsTrigger>
+          <TabsTrigger value="social" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Social Links</TabsTrigger>
+          <TabsTrigger value="notifications" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Notifications</TabsTrigger>
+          <TabsTrigger value="posts" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Posts</TabsTrigger>
+          <TabsTrigger value="activity" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Activity Log</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="theme">
+        <div className="flex-1 min-w-0">
+          <TabsContent value="theme" className="mt-0">
           <div className="p-8 rounded-[2.5rem] bg-card border border-border shadow-xl">
             <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Global Theme Registry</h3>
             <ThemeManager />
@@ -483,6 +483,7 @@ export default function SuperAdminPanel() {
         <TabsContent value="activity">
            <ActivityLog />
         </TabsContent>
+        </div>
       </Tabs>
     </div>
   );

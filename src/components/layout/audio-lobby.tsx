@@ -2,12 +2,12 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 export function AudioLobby() {
-  const db = useFirestore();
-  const settingsRef = useMemoFirebase(() => doc(db, 'donation', 'settings'), [db]);
+  const { firestore: db } = useFirebase();
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'donation', 'settings') : null, [db]);
   const { data: settings } = useDoc(settingsRef);
   
   const audioRef = useRef<HTMLAudioElement>(null);

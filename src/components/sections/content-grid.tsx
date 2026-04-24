@@ -61,7 +61,6 @@ import { logActivity } from '@/lib/activity-logger';
 import { initializeFirebase } from '@/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const { auth } = initializeFirebase();
 import { cn } from '@/lib/utils';
 
 const cardVariants = {
@@ -114,7 +113,7 @@ const parseLinks = (text: string) => {
   });
 };
 
-const initiateDownload = async (db: any, collectionName: string, id: string, url: string, name: string) => {
+const initiateDownload = async (db: any, auth: any, collectionName: string, id: string, url: string, name: string) => {
   if (!url) {
     toast({ variant: "destructive", title: "Acquisition Halted", description: "Remote resource endpoint is null or undefined." });
     return;
@@ -127,7 +126,7 @@ const initiateDownload = async (db: any, collectionName: string, id: string, url
     });
     
     // Log Activity
-    if (auth.currentUser) {
+    if (auth?.currentUser) {
       logActivity(db, auth.currentUser.uid, `Downloaded ${name} from ${collectionName}`);
     }
   } catch (e) {
@@ -175,6 +174,7 @@ const LoadingState = ({ label }: { label: string }) => (
 
 export function ROMCard({ rom }: { rom: any }) {
   const db = useFirestore();
+  const { auth } = initializeFirebase();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -260,7 +260,7 @@ export function ROMCard({ rom }: { rom: any }) {
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-2">
-                    <Button variant="outline" onClick={() => initiateDownload(db, 'roms', rom.id, rom.downloadUrl, rom.name)} className="w-full h-12 justify-start px-6 rounded-2xl border-white/10 bg-white/5 text-[10px] font-black uppercase gap-4 hover:bg-white/10">
+                    <Button variant="outline" onClick={() => initiateDownload(db, auth, 'roms', rom.id, rom.downloadUrl, rom.name)} className="w-full h-12 justify-start px-6 rounded-2xl border-white/10 bg-white/5 text-[10px] font-black uppercase gap-4 hover:bg-white/10">
                       <LinkIcon className="w-4 h-4" /> Primary Acquisition Protocol
                     </Button>
                   </div>
@@ -278,7 +278,7 @@ export function ROMCard({ rom }: { rom: any }) {
                {isExpanded ? 'Show Less' : 'Read Details'}
              </Button>
              <Button 
-                onClick={() => initiateDownload(db, 'roms', rom.id, rom.downloadUrl, rom.name)} 
+                onClick={() => initiateDownload(db, auth, 'roms', rom.id, rom.downloadUrl, rom.name)} 
                 className="w-full h-12 rounded-full bg-primary text-primary-foreground font-black uppercase text-[11px] tracking-widest shadow-md hover:scale-[1.02] active:scale-[0.98] transition-transform"
              >
                Download ROM
@@ -318,6 +318,7 @@ export function ROMGrid({ roms, isLoading }: { roms: any[], isLoading: boolean }
 
 function ModuleCard({ mod }: { mod: any }) {
   const db = useFirestore();
+  const { auth } = initializeFirebase();
   const [isExpanded, setIsExpanded] = useState(false);
   return (
     <motion.div variants={cardVariants} whileHover={{ y: -5 }}>
@@ -331,7 +332,7 @@ function ModuleCard({ mod }: { mod: any }) {
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="text-[8px] font-black uppercase text-muted-foreground">{isExpanded ? 'LESS' : 'MORE'}</Button>
           <motion.div whileTap={{ scale: 0.9 }}>
-            <Button onClick={() => initiateDownload(db, 'modules', mod.id, mod.downloadUrl, mod.name)} size="icon" className="w-10 h-10 rounded-xl bg-primary"><Download className="w-4 h-4" /></Button>
+            <Button onClick={() => initiateDownload(db, auth, 'modules', mod.id, mod.downloadUrl, mod.name)} size="icon" className="w-10 h-10 rounded-xl bg-primary"><Download className="w-4 h-4" /></Button>
           </motion.div>
         </div>
       </Card>
@@ -353,6 +354,7 @@ export function ModuleGrid({ modules, isLoading }: { modules: any[], isLoading: 
 
 function ModApkCard({ apk }: { apk: any }) {
   const db = useFirestore();
+  const { auth } = initializeFirebase();
   const [isExpanded, setIsExpanded] = useState(false);
   return (
     <motion.div variants={cardVariants} whileHover={{ y: -5 }}>
@@ -368,7 +370,7 @@ function ModApkCard({ apk }: { apk: any }) {
           <div className="text-[9px] font-black uppercase text-muted-foreground mb-4">{apk.downloadCount || 0} DOWNLOADS</div>
           <div className="mt-auto flex gap-3">
             <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
-              <Button onClick={() => initiateDownload(db, 'mod-apks', apk.id, apk.downloadUrl, apk.downloadFileName || apk.name)} className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]">Download</Button>
+              <Button onClick={() => initiateDownload(db, auth, 'mod-apks', apk.id, apk.downloadUrl, apk.downloadFileName || apk.name)} className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]">Download</Button>
             </motion.div>
             <motion.div whileTap={{ scale: 0.95 }}>
               <Button variant="outline" onClick={() => setIsExpanded(!isExpanded)} className={cn("w-12 h-12 rounded-2xl", isExpanded && "bg-primary text-white")}>
@@ -396,6 +398,7 @@ export function ModApkGrid({ apks, isLoading }: { apks: any[], isLoading: boolea
 
 export function RootGrid({ packages, isLoading }: { packages: any[], isLoading: boolean }) {
   const db = useFirestore();
+  const { auth } = initializeFirebase();
   if (isLoading) return <LoadingState label="Retrieving Root Protocols..." />;
   return (
     <section id="root" className="py-32 max-w-7xl mx-auto px-6">
@@ -412,7 +415,7 @@ export function RootGrid({ packages, isLoading }: { packages: any[], isLoading: 
                 <div className="flex flex-col items-end gap-2">
                   <div className="text-[9px] font-black uppercase text-muted-foreground">{pkg.downloadCount || 0} DOWNLOADS</div>
                   <motion.div whileTap={{ scale: 0.95 }}>
-                    <Button onClick={() => initiateDownload(db, 'root-packages', pkg.id, pkg.downloadUrl, pkg.name)} className="rounded-xl bg-primary h-12 px-6 text-[10px] font-black uppercase">Get Package</Button>
+                    <Button onClick={() => initiateDownload(db, auth, 'root-packages', pkg.id, pkg.downloadUrl, pkg.name)} className="rounded-xl bg-primary h-12 px-6 text-[10px] font-black uppercase">Get Package</Button>
                   </motion.div>
                 </div>
               </div>
@@ -441,6 +444,7 @@ export function RootGrid({ packages, isLoading }: { packages: any[], isLoading: 
 
 export function CustomGrid({ section, items, isLoading }: { section: any, items: any[], isLoading?: boolean }) {
   const db = useFirestore();
+  const { auth } = initializeFirebase();
   if (isLoading) return <LoadingState label={`Scanning ${section.label} Registry...`} />;
   return (
     <section id={`custom-${section.id}`} className="py-32 max-w-7xl mx-auto px-6">
@@ -457,7 +461,7 @@ export function CustomGrid({ section, items, isLoading }: { section: any, items:
                 <div className="text-xs text-muted-foreground mb-4 line-clamp-3 whitespace-pre-wrap">{parseLinks(item.description)}</div>
                 <div className="text-[9px] font-black uppercase text-muted-foreground mb-8">{item.downloadCount || 0} DOWNLOADS</div>
                 <motion.div whileTap={{ scale: 0.98 }}>
-                  <Button onClick={() => initiateDownload(db, section.id, item.id, item.downloadUrl, item.name)} className="w-full h-12 rounded-xl bg-primary font-black uppercase text-[10px]">Synchronize</Button>
+                  <Button onClick={() => initiateDownload(db, auth, section.id, item.id, item.downloadUrl, item.name)} className="w-full h-12 rounded-xl bg-primary font-black uppercase text-[10px]">Synchronize</Button>
                 </motion.div>
               </div>
             </Card>
@@ -494,6 +498,7 @@ export function GuideGrid({ guides, isLoading }: { guides: any[], isLoading: boo
 
 export function LiveWallpaperGrid({ wallpapers, isLoading }: { wallpapers: any[], isLoading: boolean }) {
   const db = useFirestore();
+  const { auth } = initializeFirebase();
   if (isLoading) return <LoadingState label="Rendering Visuals..." />;
   return (
     <section id="live-wallpapers" className="py-32 max-w-7xl mx-auto px-6">
@@ -508,7 +513,7 @@ export function LiveWallpaperGrid({ wallpapers, isLoading }: { wallpapers: any[]
                   <h3 className="text-xl font-black uppercase tracking-tight text-foreground mb-2">{wall.name || "Sky Visual"}</h3>
                   <div className="text-[9px] font-black uppercase text-muted-foreground mb-4">{wall.downloadCount || 0} DOWNLOADS</div>
                   <motion.div whileTap={{ scale: 0.95 }}>
-                    <Button onClick={() => initiateDownload(db, 'live-wallpapers', wall.id, wall.downloadUrl, wall.name)} className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]">Sync Visual</Button>
+                    <Button onClick={() => initiateDownload(db, auth, 'live-wallpapers', wall.id, wall.downloadUrl, wall.name)} className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]">Sync Visual</Button>
                   </motion.div>
                 </div>
               </div>
