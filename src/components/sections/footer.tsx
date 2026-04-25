@@ -18,7 +18,7 @@ export function Footer() {
   const activeConfig = settings || DEFAULT_DONATION_CONFIG;
 
   return (
-    <footer className="py-32 border-t border-white/5 flex flex-col items-center gap-16 bg-black">
+    <footer className="py-32 border-t border-white/5 flex flex-col items-center gap-16 bg-gradient-to-b from-transparent to-black/50">
       <div className="max-w-7xl mx-auto px-6 w-full flex flex-col items-center">
         <div className="flex flex-col items-center text-center mb-12">
           <Badge variant="outline" className="mb-6 border-white/10 text-[9px] font-black uppercase tracking-[0.3em] px-6 py-2 rounded-full text-blue-500 bg-blue-500/5">

@@ -59,7 +59,6 @@ const HUB_OWNERS = ['meinkxun@gmail.com', 'skyhubowner@gmail.com'];
 export function Navbar() {
   const { user, auth, firestore: db } = useFirebase();
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
-  const [mounted, setMounted] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -90,9 +89,9 @@ export function Navbar() {
   const isDeveloperRole = profile?.role === 'developer';
 
   useEffect(() => {
-    setMounted(true);
     const savedTheme = localStorage.getItem('skyhub-theme') as 'light' | 'dark' | null;
-    setTheme(savedTheme || 'dark');
+    if (savedTheme) setTheme(savedTheme);
+    else setTheme('dark');
   }, []);
 
   useEffect(() => {
@@ -157,84 +156,196 @@ export function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center p-6 pointer-events-none">
-      <nav className="hidden md:flex items-center gap-4 glass-pill px-6 py-3 rounded-full pointer-events-auto border border-white/10 shadow-2xl bg-black/40 backdrop-blur-xl">
-        <Link href="/" className="flex items-center">
+      <nav className="hidden md:flex items-center gap-1.5 glass-pill px-2 py-1.5 rounded-full pointer-events-auto border border-border shadow-2xl">
+        <Link href="/" className="ml-4 mr-2 flex items-center">
           {logoUrl ? (
-            <img src={logoUrl} className="h-8 w-auto object-contain" alt="Logo" />
+            <img src={logoUrl} className="h-10 w-auto object-contain py-1" alt="Logo" />
           ) : (
-            <span className="font-black text-lg uppercase tracking-tighter text-white">{brandName}</span>
+            <span className="font-black text-sm uppercase tracking-tighter">{brandName}</span>
           )}
         </Link>
 
-        <div className="flex items-center gap-6 ml-4">
+        <div className="w-px h-4 bg-border mx-2" />
+
+        {navLinks.map((link) => (
+          <Link
+            key={link.name}
+            href={link.href}
+            className="group"
+          >
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-all rounded-full hover:bg-muted"
+            >
+              {link.icon}
+              {link.name}
+            </motion.div>
+          </Link>
+        ))}
+        
+        <div className="w-px h-4 bg-border mx-2" />
+
+        <div className="relative flex items-center">
+          <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground" />
+          <Input 
+            placeholder="Search..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                window.location.href = '/search';
+              }
+            }}
+            className="h-9 w-40 rounded-full bg-muted/50 border-border text-[10px] pl-9"
+          />
+        </div>
+        
+        <div className="w-px h-4 bg-border mx-2" />
+
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-full hover:bg-muted text-muted-foreground flex items-center justify-center"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
+        </motion.div>
+
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSupportClick}
+            className="w-9 h-9 rounded-full hover:bg-muted text-red-500 flex items-center justify-center"
+          >
+            <Heart className="w-4 h-4 fill-current" />
+          </Button>
+        </motion.div>
+
+        {workspace && (
+          <Link href="/dashboard">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button 
+                variant="ghost"
+                className={cn(
+                  "h-9 px-4 rounded-full font-black uppercase text-[10px] tracking-widest gap-2 flex items-center justify-center transition-all",
+                  workspace.color
+                )}
+              >
+                {workspace.icon}
+                {workspace.label}
+              </Button>
+            </motion.div>
+          </Link>
+        )}
+
+        {user ? (
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleLogout} 
+              className="w-9 h-9 rounded-full hover:bg-muted text-red-500 ml-1 flex items-center justify-center"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </Button>
+          </motion.div>
+        ) : (
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsAuthOpen(true)}
+              className="w-9 h-9 rounded-full hover:bg-muted text-blue-600 ml-1 flex items-center justify-center"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+            </Button>
+          </motion.div>
+        )}
+      </nav>
+
+      <div className="md:hidden w-full flex justify-between items-center pointer-events-auto px-6 py-2.5 glass-pill rounded-full border border-border shadow-2xl">
+        <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
+          <Link href="/" className="flex items-center">
+            {logoUrl ? (
+              <img src={logoUrl} className="h-10 w-auto object-contain py-1" alt="Logo" />
+            ) : (
+              <span className="font-black text-xl uppercase tracking-tighter">{brandName}</span>
+            )}
+          </Link>
+        </motion.div>
+        <div className="flex items-center gap-2">
+          <motion.div whileTap={{ scale: 0.9 }}>
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="w-8 h-8 rounded-full hover:bg-white/10 text-white/70 flex items-center justify-center p-0"
+              className="w-10 h-10 rounded-full text-muted-foreground flex items-center justify-center hover:bg-muted transition-all"
             >
-              {!mounted ? <Moon className="w-5 h-5" /> : theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
           </motion.div>
 
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <motion.div whileTap={{ scale: 0.9 }}>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleSupportClick}
-              className="w-8 h-8 rounded-full hover:bg-white/10 text-red-500 flex items-center justify-center p-0"
+              className="w-10 h-10 rounded-full text-red-500 flex items-center justify-center hover:bg-red-500/10 transition-all"
             >
               <Heart className="w-5 h-5 fill-current" />
             </Button>
           </motion.div>
 
           {user ? (
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <motion.div whileTap={{ scale: 0.9 }}>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={handleLogout} 
-                className="w-8 h-8 rounded-full hover:bg-white/10 text-red-500 flex items-center justify-center p-0"
+                onClick={handleLogout}
+                className="w-10 h-10 rounded-full text-red-500 hover:bg-red-500/10 flex items-center justify-center transition-all"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4" />
               </Button>
             </motion.div>
           ) : (
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <motion.div whileTap={{ scale: 0.9 }}>
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setIsAuthOpen(true)}
-                className="w-8 h-8 rounded-full hover:bg-white/10 text-blue-500 flex items-center justify-center p-0"
+                className="w-10 h-10 rounded-full text-blue-600 hover:bg-blue-600/10 flex items-center justify-center transition-all"
               >
-                <LogIn className="w-5 h-5" />
+                <LogIn className="w-4 h-4" />
               </Button>
             </motion.div>
           )}
 
           <Sheet>
             <SheetTrigger asChild>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full hover:bg-white/10 text-white/70 flex items-center justify-center p-0">
+              <motion.div whileTap={{ scale: 0.9 }}>
+                <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 flex items-center justify-center hover:bg-muted transition-all">
                   <Menu className="w-5 h-5" />
                 </Button>
               </motion.div>
             </SheetTrigger>
             <SheetContent 
               side="right" 
-              className="bg-black/95 backdrop-blur-3xl border-l border-white/10 p-0 flex flex-col shadow-2xl overflow-hidden text-white"
+              className="bg-background/95 backdrop-blur-3xl border-l border-border p-0 flex flex-col shadow-2xl overflow-hidden"
             >
-              <SheetHeader className="p-8 border-b border-white/10">
-                <SheetTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3 text-white">
-                  <Terminal className="w-5 h-5 text-white" />
+              <SheetHeader className="p-8 border-b border-border">
+                <SheetTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
+                  <Terminal className="w-5 h-5 text-primary" />
                   TERMINAL
                 </SheetTitle>
               </SheetHeader>
               
               <ScrollArea className="flex-1 px-8 py-4">
                 <div className="flex flex-col gap-2">
-                  {[...navLinks, { name: 'Search', href: '/search', icon: <Search className="w-3.5 h-3.5" /> }].map((link, idx) => (
+                  {navLinks.map((link, idx) => (
                     <motion.div
                       key={link.name}
                       initial={{ opacity: 0, x: -20 }}
@@ -244,19 +355,19 @@ export function Navbar() {
                       <SheetClose asChild>
                         <Link
                           href={link.href}
-                          className="flex items-center justify-between py-4 group transition-all active:scale-95 border-b border-white/5 last:border-0"
+                          className="flex items-center justify-between py-4 group transition-all active:scale-95 border-b border-border/50 last:border-0"
                         >
                           <motion.div 
                             className="flex items-center gap-4"
                             whileHover={{ x: 10 }}
                             transition={{ type: "spring", stiffness: 400, damping: 25 }}
                           >
-                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/50 group-hover:bg-white/10 group-hover:text-white transition-all">
+                            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all">
                               {link.icon}
                             </div>
-                            <span className="font-black uppercase text-[10px] tracking-[0.2em] text-white/60 group-hover:text-white">{link.name}</span>
+                            <span className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground group-hover:text-foreground">{link.name}</span>
                           </motion.div>
-                          <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
                         </Link>
                       </SheetClose>
                     </motion.div>
@@ -264,7 +375,22 @@ export function Navbar() {
                 </div>
               </ScrollArea>
 
-              <div className="p-8 border-t border-white/10 space-y-3 bg-white/5">
+              <div className="p-8 border-t border-border space-y-3 bg-muted/30">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Button 
+                    onClick={handleSupportClick}
+                    variant="outline"
+                    className="w-full h-12 rounded-2xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all text-[9px]"
+                  >
+                    <Heart className="w-4 h-4 fill-current" />
+                    Support Hub
+                  </Button>
+                </motion.div>
+
                 {workspace && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -273,7 +399,12 @@ export function Navbar() {
                   >
                     <SheetClose asChild>
                       <Link href="/dashboard" className="w-full block">
-                        <Button className="w-full h-12 rounded-2xl font-black uppercase tracking-widest gap-3 justify-start px-6 bg-white text-black hover:bg-white/90 shadow-xl transition-all active:scale-95 text-[9px]">
+                        <Button className={cn(
+                          "w-full h-12 rounded-2xl font-black uppercase tracking-widest gap-3 justify-start px-6 shadow-xl transition-all active:scale-95 text-[9px]",
+                          workspace.color.includes('red') ? "bg-red-600 text-white" : 
+                          workspace.color.includes('orange') ? "bg-orange-600 text-white" : 
+                          "bg-blue-600 text-white"
+                        )}>
                           {workspace.icon}
                           {workspace.label}
                         </Button>
@@ -281,17 +412,11 @@ export function Navbar() {
                     </SheetClose>
                   </motion.div>
                 )}
-                
-                <div className="grid grid-cols-1 gap-2">
-                  <Button 
-                    onClick={() => window.open(telegramChannel, '_blank')}
-                    variant="outline"
-                    className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-white/10 text-white/70 hover:bg-white/10 transition-all active:scale-95 text-[8px]"
-                  >
-                    <Send className="w-4 h-4" />
-                    Telegram
-                  </Button>
-                  
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                >
                   {user ? (
                     <Button 
                       variant="outline" 
@@ -299,114 +424,47 @@ export function Navbar() {
                       className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all active:scale-95 text-[8px]"
                     >
                       <LogOut className="w-4 h-4" />
-                      Sign Out
+                      Terminal Exit
                     </Button>
                   ) : (
                     <Button 
                       onClick={() => setIsAuthOpen(true)} 
-                      className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 bg-white text-black shadow-xl transition-all active:scale-95 text-[8px]"
+                      className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 bg-blue-600 text-white shadow-xl shadow-blue-600/20 transition-all active:scale-95 text-[8px]"
                     >
                       <LogIn className="w-4 h-4" />
-                      Sign In
+                      Terminal Entry
                     </Button>
                   )}
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </nav>
+                </motion.div>
 
-      {/* Mobile Nav */}
-      <div className="md:hidden w-full max-w-[90%] flex justify-between items-center pointer-events-auto px-6 py-3 glass-pill rounded-full border border-white/10 shadow-2xl bg-black/60 backdrop-blur-xl">
-        <Link href="/" className="flex items-center">
-          {logoUrl ? (
-            <img src={logoUrl} className="h-8 w-auto object-contain" alt="Logo" />
-          ) : (
-            <span className="font-black text-lg uppercase tracking-tighter text-white">{brandName}</span>
-          )}
-        </Link>
-        <div className="flex items-center gap-4">
-          <motion.div whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="w-8 h-8 rounded-full text-white/70 flex items-center justify-center hover:bg-white/10 transition-all"
-            >
-              {!mounted ? <Moon className="w-5 h-5" /> : theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
-          </motion.div>
-
-          <motion.div whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSupportClick}
-              className="w-8 h-8 rounded-full text-red-500 flex items-center justify-center hover:bg-white/10 transition-all"
-            >
-              <Heart className="w-5 h-5 fill-current" />
-            </Button>
-          </motion.div>
-
-          {user && (
-            <motion.div whileTap={{ scale: 0.9 }}>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleLogout}
-                className="w-8 h-8 rounded-full text-red-500 hover:bg-white/10 flex items-center justify-center transition-all"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </motion.div>
-          )}
-
-          <Sheet>
-            <SheetTrigger asChild>
-              <motion.div whileTap={{ scale: 0.9 }}>
-                <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/10 transition-all text-white/70">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </motion.div>
-            </SheetTrigger>
-            <SheetContent 
-              side="right" 
-              className="bg-black/95 backdrop-blur-3xl border-l border-white/10 p-0 flex flex-col shadow-2xl overflow-hidden text-white"
-            >
-              {/* Reuse Desktop Sheet Content logic but adapted for mobile */}
-              <SheetHeader className="p-8 border-b border-white/10">
-                <SheetTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3 text-white">
-                  <Terminal className="w-5 h-5 text-white" />
-                  TERMINAL
-                </SheetTitle>
-              </SheetHeader>
-              
-              <ScrollArea className="flex-1 px-8 py-4">
-                <div className="flex flex-col gap-1">
-                  {[...navLinks, { name: 'Search', href: '/search', icon: <Search className="w-3.5 h-3.5" /> }].map((link, idx) => (
-                    <SheetClose asChild key={link.name}>
-                      <Link
-                        href={link.href}
-                        className="flex items-center justify-between py-4 border-b border-white/5 last:border-0"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/50">{link.icon}</div>
-                          <span className="font-black uppercase text-[10px] tracking-widest text-white/60">{link.name}</span>
-                        </div>
-                      </Link>
-                    </SheetClose>
-                  ))}
-                </div>
-              </ScrollArea>
-
-              <div className="p-8 border-t border-white/10 space-y-3 bg-white/5">
-                <Button onClick={handleSupportClick} variant="outline" className="w-full h-11 rounded-xl text-red-500 border-red-500/20 text-[10px] uppercase font-black tracking-widest">Support Hub</Button>
-                {user ? (
-                   <Button onClick={handleLogout} variant="outline" className="w-full h-11 rounded-xl text-red-500 border-red-500/20 text-[10px] uppercase font-black tracking-widest">Logout</Button>
-                ) : (
-                  <Button onClick={() => setIsAuthOpen(true)} className="w-full h-11 rounded-xl bg-white text-black text-[10px] uppercase font-black tracking-widest">Login</Button>
-                )}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <Button 
+                    onClick={() => window.open(telegramChannel, '_blank')}
+                    variant="outline"
+                    className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-blue-500/20 text-blue-500 hover:bg-blue-500/10 transition-all active:scale-95 text-[8px]"
+                  >
+                    <Send className="w-4 h-4" />
+                    Telegram Channel
+                  </Button>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9 }}
+                >
+                  <Button 
+                    onClick={() => window.open(telegramDiscussion, '_blank')}
+                    variant="outline"
+                    className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-green-500/20 text-green-500 hover:bg-green-500/10 transition-all active:scale-95 text-[8px]"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Discussion Chat
+                  </Button>
+                </motion.div>
               </div>
             </SheetContent>
           </Sheet>

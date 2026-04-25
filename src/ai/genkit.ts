@@ -30,7 +30,7 @@ export const ai = genkit({
   plugins: [
     googleAI(apiKey ? { apiKey } : {})
   ],
-  model: 'googleai/gemini-3-flash-preview',
+  model: 'googleai/gemini-1.5-flash',
 });
 
 // Implementation of ignoreFailedSpan as requested by the user to suppress OTel noise

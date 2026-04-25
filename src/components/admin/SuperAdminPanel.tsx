@@ -313,7 +313,7 @@ export default function SuperAdminPanel() {
                     <p className="text-[8px] font-black uppercase text-muted-foreground mb-3 text-center tracking-[0.2em]">Identity Preview</p>
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted">
-                        {(avatarPreview || identityData?.adminAvatarUrl) && <img src={avatarPreview || identityData.adminAvatarUrl} className="w-full h-full object-cover" />}
+                        {(avatarPreview || identityData?.adminAvatarUrl) && <img src={avatarPreview || identityData.adminAvatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />}
                       </div>
                       <div>
                         <h4 className="text-[10px] font-black uppercase">{identityData?.adminName || 'Admin'}</h4>

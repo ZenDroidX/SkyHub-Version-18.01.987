@@ -36,16 +36,11 @@ function Countdown({ endDate }: { endDate: Date }) {
 
 export function RootContent({ children }: { children: React.ReactNode }) {
   const { auth, firestore: db } = useFirebase();
-  const [mounted, setMounted] = useState(false);
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'donation', 'settings') : null, [db]);
   const { data: settings, isLoading: isSettingsLoading } = useDoc(settingsRef);
 
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [hasResolvedSettings, setHasResolvedSettings] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const isEnabled = settings?.loading 
     ? (settings.loading.enabled !== false)
@@ -106,7 +101,7 @@ export function RootContent({ children }: { children: React.ReactNode }) {
     }
   }, [isSettingsLoading, isEnabled]);
 
-  const showLoadingScreen = mounted && isInitialLoad && hasResolvedSettings && isEnabled;
+  const showLoadingScreen = isInitialLoad && hasResolvedSettings && isEnabled;
 
   return (
     <>

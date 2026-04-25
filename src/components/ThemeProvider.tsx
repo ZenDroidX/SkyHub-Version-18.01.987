@@ -98,11 +98,12 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
           }
         });
       } else {
-        // Reset to default
-        document.documentElement.style.setProperty('--site-gradient', '#000000'); // Pure black
-        document.documentElement.style.setProperty('--primary', '0 0% 100%'); // Pure white
-        document.documentElement.style.setProperty('--background', '0 0% 0%'); // Pure black
+        // Reset to default (Dark Mode)
+        document.documentElement.style.setProperty('--site-gradient', '#000000'); 
+        document.documentElement.style.setProperty('--primary', '160 70% 45%');
+        document.documentElement.style.setProperty('--background', '0 0% 0%');
         document.documentElement.style.setProperty('--bg', '#000000');
+        document.documentElement.style.setProperty('--foreground', '200 20% 90%');
         document.documentElement.style.setProperty('--font-sans', 'Inter');
         document.documentElement.style.setProperty('--font-body', 'Inter');
         document.documentElement.style.setProperty('--radius', '1.5rem');

@@ -214,12 +214,21 @@ export function ROMCard({ rom }: { rom: any }) {
           background: rom.gradient ? rom.gradient : "var(--card)",
         }}
       >
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-background/50">
-          <img 
-            src={rom.imageUrl || `https://picsum.photos/seed/${rom.id}/800/600`} 
-            alt={rom.name} 
-            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-500 scale-105 group-hover:scale-100" 
-          />
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-background/50 flex items-center justify-center p-6 text-center">
+          {rom.imageUrl ? (
+            <img 
+              src={rom.imageUrl} 
+              alt={rom.name} 
+              className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-500 scale-105 group-hover:scale-100" 
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <Camera className="w-8 h-8 text-muted-foreground/30" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 leading-tight">
+                Sorry for the inconveniences,<br />image will be added soon
+              </p>
+            </div>
+          )}
           <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
              <div className="flex gap-2">
                 <Badge variant="outline" className="text-[9px] font-black bg-black/40 backdrop-blur-sm border-white/10 uppercase tracking-widest text-white px-3 py-1 rounded-full">
@@ -360,8 +369,17 @@ function ModApkCard({ apk }: { apk: any }) {
     <motion.div variants={cardVariants} whileHover={{ y: -5 }}>
       <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">
         <div className="p-6">
-          <div className="relative aspect-square w-full bg-muted/20 flex items-center justify-center rounded-[2.5rem] overflow-hidden border border-border/10 p-10">
-            <img src={apk.imageUrl || `https://picsum.photos/seed/${apk.id}/400/400`} alt={apk.name} className="max-w-full max-h-full object-contain drop-shadow-2xl" />
+          <div className="relative aspect-square w-full bg-muted/20 flex items-center justify-center rounded-[2.5rem] overflow-hidden border border-border/10 p-10 text-center">
+            {apk.imageUrl ? (
+              <img src={apk.imageUrl} alt={apk.name} className="max-w-full max-h-full object-contain drop-shadow-2xl" />
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <Package className="w-8 h-8 text-muted-foreground/30" />
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 leading-tight">
+                  Sorry for the inconveniences,<br />image will be added soon
+                </p>
+              </div>
+            )}
           </div>
         </div>
         <div className="px-8 pb-8 flex flex-col flex-1">
@@ -453,8 +471,17 @@ export function CustomGrid({ section, items, isLoading }: { section: any, items:
         {items.map((item) => (
           <motion.div key={item.id} variants={cardVariants} whileHover={{ y: -5 }}>
             <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">
-              <div className="relative aspect-video w-full overflow-hidden">
-                <img src={item.imageUrl || `https://picsum.photos/seed/${item.id}/800/600`} alt={item.name} className="w-full h-full object-cover" />
+              <div className="relative aspect-video w-full overflow-hidden bg-background/50 flex items-center justify-center p-6 text-center">
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-3">
+                    <Layers className="w-8 h-8 text-muted-foreground/30" />
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 leading-tight">
+                      Sorry for the inconveniences,<br />image will be added soon
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="p-8 flex flex-col flex-1">
                 <h3 className="text-xl font-black uppercase tracking-tight text-foreground mb-4">{item.name}</h3>
@@ -507,8 +534,17 @@ export function LiveWallpaperGrid({ wallpapers, isLoading }: { wallpapers: any[]
         {wallpapers?.map((wall) => (
           <motion.div key={wall.id} variants={cardVariants} whileHover={{ y: -5 }}>
             <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">
-              <div className="relative aspect-[9/16] w-full bg-background/50 overflow-hidden">
-                <img src={wall.previewUrl || wall.imageUrl} alt="Live" className="w-full h-full object-cover" />
+              <div className="relative aspect-[9/16] w-full bg-background/50 overflow-hidden flex items-center justify-center p-8 text-center">
+                {(wall.previewUrl || wall.imageUrl) ? (
+                  <img src={wall.previewUrl || wall.imageUrl} alt="Live" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-4">
+                    <Video className="w-10 h-10 text-muted-foreground/30" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 leading-tight">
+                      Sorry for the inconveniences,<br />visual will be added soon
+                    </p>
+                  </div>
+                )}
                 <div className="absolute bottom-8 left-8 right-8">
                   <h3 className="text-xl font-black uppercase tracking-tight text-foreground mb-2">{wall.name || "Sky Visual"}</h3>
                   <div className="text-[9px] font-black uppercase text-muted-foreground mb-4">{wall.downloadCount || 0} DOWNLOADS</div>

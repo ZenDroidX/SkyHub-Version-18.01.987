@@ -66,8 +66,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-background/40 backdrop-blur-sm">
-      <div className="max-w-4xl mx-auto pt-8 px-6">
+    <div className="min-h-screen bg-background/40 backdrop-blur-sm pt-28">
+      <div className="max-w-7xl mx-auto px-6 mb-4">
         <button
           onClick={() => router.push('/')}
           className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
@@ -76,7 +76,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           Back to Site
         </button>
       </div>
-      <main className="max-w-4xl mx-auto py-8 px-6">
+      <main className="max-w-7xl mx-auto pb-12 px-6">
         {children}
       </main>
     </div>

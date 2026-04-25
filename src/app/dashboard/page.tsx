@@ -7,6 +7,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
 import { 
+  LogOut,
+  Menu,
+  Sun,
+  Moon,
   ArrowLeft, 
   Shield, 
   Cpu, 
@@ -720,14 +724,28 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20 relative text-foreground">
-      {isSuperAdmin && <StormEnvironmentFX config={activeStormConfig} />}
+                  {isSuperAdmin && <StormEnvironmentFX config={activeStormConfig} />}
       
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-        <motion.div whileHover={{ x: -5 }} whileTap={{ scale: 0.95 }}>
-          <Button variant="outline" onClick={() => router.push('/')} className="rounded-2xl bg-card border border-border h-12 px-6">
-            <ArrowLeft className="w-5 h-5 mr-3" /> Back to Hub
-          </Button>
-        </motion.div>
+        <div className="flex items-center gap-4">
+          <motion.div whileHover={{ x: -5 }} whileTap={{ scale: 0.95 }}>
+            <Button variant="outline" onClick={() => router.push('/')} className="rounded-2xl bg-card border border-border h-12 px-6">
+              <ArrowLeft className="w-5 h-5 mr-3" /> Back to Hub
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                await signOut(auth);
+                router.push('/');
+              }} 
+              className="rounded-2xl bg-red-500/10 border-red-500/20 text-red-500 h-12 px-6 hover:bg-red-500/20"
+            >
+              <LogOut className="w-5 h-5 mr-3" /> Terminate Session
+            </Button>
+          </motion.div>
+        </div>
         <Badge className={cn("px-4 py-1.5 rounded-full font-black text-[10px]", isSuperAdmin ? "bg-red-500/10 text-red-600" : "bg-blue-600/10 text-blue-600")}>
           {isSuperAdmin ? 'SUPER ADMIN' : isAdminRole ? 'ADMIN' : 'DEVELOPER'}
         </Badge>
@@ -735,8 +753,9 @@ export default function DashboardPage() {
 
       <div className="flex flex-col lg:flex-row gap-10 items-start">
         {/* Navigation Sidebar (Desktop) / Tab Bar (Mobile) */}
-        <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-32 space-y-4">
-          <div className="flex flex-col gap-2 p-2 bg-card/30 backdrop-blur-xl border border-border rounded-[2.5rem]">
+        <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-32 space-y-4 z-40">
+          <div className="flex flex-row overflow-x-auto lg:flex-col gap-2 p-2 bg-card/30 backdrop-blur-xl border border-border rounded-3xl lg:rounded-[2.5rem] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent snap-x snap-mandatory scroll-pl-4">
+            <div className="min-w-[1rem] lg:hidden" /> {/* Left spacer for mobile */}
             {menuItems.map((item) => (
               <motion.button
                 key={item.id}
@@ -744,22 +763,23 @@ export default function DashboardPage() {
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
-                  "flex items-center gap-3 px-5 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border text-left w-full",
+                  "flex items-center gap-3 px-5 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border text-left min-w-max lg:w-full snap-start",
                   activeTab === item.id 
                     ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
                     : "bg-transparent text-muted-foreground border-transparent hover:border-border/50 hover:text-foreground"
                 )}
               >
                 <div className={cn(
-                  "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
+                  "w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0",
                   activeTab === item.id ? "bg-white/20" : "bg-muted"
                 )}>
                   {item.icon}
                 </div>
-                <span className="flex-1 uppercase tracking-widest">{item.label}</span>
-                {activeTab === item.id && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_#fff] animate-pulse" />}
+                <span className="flex-1 uppercase tracking-widest whitespace-nowrap">{item.label}</span>
+                {activeTab === item.id && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_#fff] animate-pulse shrink-0" />}
               </motion.button>
             ))}
+            <div className="min-w-[1rem] lg:hidden" /> {/* Right spacer for mobile */}
           </div>
 
           {/* Quick Stats or Info could go here */}
@@ -776,10 +796,10 @@ export default function DashboardPage() {
         <motion.div 
           layout 
           transition={{ duration: 0.4 }} 
-          className="flex-1 w-full bg-card/20 backdrop-blur-md rounded-[3rem] p-6 lg:p-12 min-h-[700px] border border-border/50 shadow-2xl relative overflow-hidden"
+          className="flex-1 w-full bg-card/20 backdrop-blur-md rounded-3xl lg:rounded-[3rem] p-6 lg:p-12 min-h-[700px] lg:max-h-[calc(100vh-160px)] border border-border/50 shadow-2xl relative overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
         >
           {activeTab === 'profile' ? (
-            <div className="space-y-10 max-w-4xl">
+            <div className="space-y-10 w-full">
               <div className="flex items-center gap-4"><UserCircle className="w-8 h-8 text-primary" /><h2 className="text-3xl font-black uppercase">My Profile</h2></div>
               <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6">
                 <div className="space-y-4">
@@ -800,6 +820,62 @@ export default function DashboardPage() {
                     placeholder="Enter profile image URL"
                   />
                 </div>
+                
+                {/* Theme Switcher */}
+                <div className="space-y-4 pt-4 border-t border-border/50">
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Environment Theme</Label>
+                  <div className="flex gap-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        document.documentElement.classList.remove('dark');
+                        document.documentElement.classList.add('light');
+                        localStorage.setItem('skyhub-theme', 'light');
+                        window.dispatchEvent(new Event('storage'));
+                      }}
+                      className="flex-1 rounded-xl h-14 uppercase font-black text-[9px] tracking-widest border-border hover:bg-muted text-foreground"
+                    >
+                      <Sun className="w-4 h-4 mr-2" /> Light Protocol
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        document.documentElement.classList.remove('light');
+                        document.documentElement.classList.add('dark');
+                        localStorage.setItem('skyhub-theme', 'dark');
+                        window.dispatchEvent(new Event('storage'));
+                      }}
+                      className="flex-1 rounded-xl h-14 uppercase font-black text-[9px] tracking-widest border-border hover:bg-muted text-foreground"
+                    >
+                      <Moon className="w-4 h-4 mr-2" /> Dark Protocol
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Admin Mode Switch (for Hub Owners) */}
+                {isSuperAdmin && (
+                  <div className="space-y-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center justify-between bg-black/20 p-6 rounded-2xl border border-border">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                          <Shield className="w-3 h-3 text-red-500" /> Admin Bypass
+                        </Label>
+                        <p className="text-[8px] text-muted-foreground uppercase opacity-70">Toggle elevated terminal clearance</p>
+                      </div>
+                      <Switch 
+                        checked={profile?.role === 'super_admin'} 
+                        onCheckedChange={async (checked) => {
+                          if (!currentUser) return;
+                          await updateDocumentNonBlocking(doc(db, 'users', currentUser.uid), { 
+                            role: checked ? 'super_admin' : 'user' 
+                          });
+                          toast({ title: checked ? "Superuser Mode Activated" : "Standard User Protocol Active" });
+                        }} 
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {editProfileImage && (
                   <div className="flex justify-center p-4">
                     <img src={editProfileImage} alt="Profile Preview" className="w-24 h-24 rounded-full object-cover border-4 border-primary/20" />

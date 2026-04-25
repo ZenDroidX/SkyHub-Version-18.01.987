@@ -55,13 +55,20 @@ export function DeviceShowcase() {
           className="relative w-[280px] md:w-[380px] aspect-[9/19] [transform-style:preserve-3d]"
         >
           {/* Device Body Simulation - Reflecting the Sky Blue Redmi 12 5G */}
-          <div className="absolute inset-0 bg-[#E3F2FD] rounded-[3.5rem] border-[10px] border-[#B0BEC5] shadow-[0_0_100px_rgba(37,99,235,0.1)] overflow-hidden">
-            <img 
-              src={deviceImage || "https://picsum.photos/seed/sky-device/800/1600"} 
-              alt="Redmi 12 5G" 
-              className="w-full h-full object-cover"
-              data-ai-hint="smartphone blue"
-            />
+          <div className="absolute inset-0 bg-[#E3F2FD] rounded-[3.5rem] border-[10px] border-[#B0BEC5] shadow-[0_0_100px_rgba(37,99,235,0.1)] overflow-hidden flex items-center justify-center">
+            {deviceImage ? (
+              <img 
+                src={deviceImage} 
+                alt="Redmi 12 5G" 
+                className="w-full h-full object-cover"
+                data-ai-hint="smartphone blue"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-blue-500/20 p-12 text-center">
+                <Smartphone className="w-24 h-24 mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-widest leading-tight">Image will be added soon.<br/>Sorry for the inconvenience.</p>
+              </div>
+            )}
             
             {/* Camera Module Silhouette - Precise Dual Ring Alignment */}
             <div className="absolute top-10 right-8 w-28 h-36 bg-white/40 rounded-3xl border border-white/60 backdrop-blur-xl flex flex-col items-center justify-center gap-4">

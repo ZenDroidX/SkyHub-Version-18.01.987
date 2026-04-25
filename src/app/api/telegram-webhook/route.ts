@@ -1,3 +1,6 @@
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
+
 /**
  * @fileOverview Production Webhook for Telegram ROM Sync (Vercel Optimized)
  * Path: /api/telegram-webhook
@@ -10,10 +13,6 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const admin = await import('firebase-admin');
-    const { adminDb } = await import('@/lib/firebase-admin-config');
-    const FieldValue = admin.firestore.FieldValue;
-
     const update = await req.json();
 
     // Protocol Verification: Ensure update is a broadcast channel post

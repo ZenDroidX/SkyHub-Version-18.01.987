@@ -260,16 +260,23 @@ export function Wallpapers({ wallpapers, isLoading }: { wallpapers: any[], isLoa
                     isSelected ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-background" : "hover:border-blue-500/50"
                   )}
                 >
-                  <motion.img 
-                    src={wall.imageUrl} 
-                    alt="Wallpaper" 
-                    className={cn(
-                      "object-cover w-full h-full transition-transform duration-700",
-                      !isSelected && "group-hover:scale-105",
-                      isSelected && "scale-105 blur-[1px]"
-                    )} 
-                    whileHover={{ scale: 1.05 }}
-                  />
+                  {wall.imageUrl ? (
+                    <motion.img 
+                      src={wall.imageUrl} 
+                      alt="Wallpaper" 
+                      className={cn(
+                        "object-cover w-full h-full transition-transform duration-700",
+                        !isSelected && "group-hover:scale-105",
+                        isSelected && "scale-105 blur-[1px]"
+                      )} 
+                      whileHover={{ scale: 1.05 }}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-blue-500/20 p-8 text-center bg-black/40">
+                      <Sparkles className="w-12 h-12 mb-4" />
+                      <p className="text-[10px] font-black uppercase tracking-widest leading-tight">Image will be added soon.<br/>Sorry for the inconvenience.</p>
+                    </div>
+                  )}
                   <div className={cn(
                     "absolute inset-0 transition-opacity duration-300",
                     isSelected ? "bg-blue-500/10" : "bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100"

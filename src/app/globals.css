@@ -8,55 +8,55 @@
   }
   :root {
     --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
+    --foreground: 200 20% 90%;
 
-    --card: 0 0% 3%;
-    --card-foreground: 0 0% 90%;
+    --card: 0 0% 4%;
+    --card-foreground: 200 20% 90%;
 
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 0% 90%;
+    --popover: 0 0% 4%;
+    --popover-foreground: 200 20% 90%;
 
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 160 70% 45%;
+    --primary-foreground: 220 20% 4%;
 
-    --secondary: 0 0% 8%;
-    --secondary-foreground: 0 0% 90%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 200 20% 90%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 50%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 200 10% 55%;
 
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 160 60% 35%;
+    --accent-foreground: 220 20% 4%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 0 0% 10%;
-    --input: 0 0% 10%;
-    --ring: 0 0% 100%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 160 70% 45%;
 
     --radius: 1.5rem;
 
     /* Custom tokens */
-    --neon-glow: 0 0% 100%;
-    --neon-secondary: 0 0% 100%;
-    --neon-tertiary: 0 0% 100%;
-    --glass-bg: 0 0% 5% / 0.6;
-    --glass-border: 0 0% 100% / 0.1;
-    --glass-shine: 0 0% 100% / 0.05;
-    --site-gradient: #000000;
+    --neon-glow: 160 70% 45%;
+    --neon-secondary: 35 100% 55%;
+    --neon-tertiary: 310 100% 60%;
+    --glass-bg: 0 0% 0% / 0.4;
+    --glass-border: 200 20% 90% / 0.08;
+    --glass-shine: 200 20% 90% / 0.05;
+    --site-gradient: hsl(var(--background));
     
-    --font-display: 'Inter', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    --font-display: 'Cinzel', serif;
+    --font-body: 'Cormorant Garamond', serif;
 
-    --sidebar-background: 0 0% 2%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 5%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 10%;
-    --sidebar-ring: 0 0% 100%;
+    --sidebar-background: 220 15% 6%;
+    --sidebar-foreground: 200 20% 90%;
+    --sidebar-primary: 160 70% 45%;
+    --sidebar-primary-foreground: 220 20% 4%;
+    --sidebar-accent: 220 15% 12%;
+    --sidebar-accent-foreground: 200 20% 90%;
+    --sidebar-border: 200 15% 18%;
+    --sidebar-ring: 160 70% 45%;
   }
 
   /* Light mode */
@@ -79,6 +79,26 @@
     --glass-border: 220 15% 30% / 0.1;
     --glass-shine: 0 0% 100% / 0.4;
   }
+
+  /* Dark mode */
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 200 20% 90%;
+    --card: 0 0% 2%;
+    --card-foreground: 200 20% 90%;
+    --popover: 0 0% 2%;
+    --popover-foreground: 200 20% 90%;
+    --secondary: 0 0% 6%;
+    --secondary-foreground: 200 20% 90%;
+    --muted: 0 0% 8%;
+    --muted-foreground: 200 10% 55%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --glass-bg: 0 0% 0% / 0.8;
+    --glass-border: 200 20% 90% / 0.05;
+    --glass-shine: 200 20% 90% / 0.02;
+    --site-gradient: #000000;
+  }
 }
 
 @layer base {
@@ -87,8 +107,13 @@
     transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
   }
   body {
-    @apply bg-[var(--site-gradient)] text-foreground font-body antialiased;
+    @apply bg-black text-foreground font-body antialiased selection:bg-primary/30;
+    background: #000000;
     transition: color 0.3s ease;
+  }
+  .light body {
+    @apply bg-[var(--site-gradient)];
+    background: var(--site-gradient);
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-displayFont;
@@ -101,4 +126,24 @@
 
 .glass-pill {
   @apply bg-background/60 backdrop-blur-2xl border border-border shadow-2xl;
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.2);
+    border-radius: 20px;
+  }
 }
