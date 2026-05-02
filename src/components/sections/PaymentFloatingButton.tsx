@@ -27,30 +27,6 @@ export function PaymentFloatingButton({ settings }: PaymentFloatingButtonProps) 
   return (
     <div className="fixed bottom-8 right-8 z-[100]">
       <AnimatePresence>
-        {!isOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ 
-              opacity: 1, 
-              x: 0,
-              y: [0, -10, 0] 
-            }}
-            transition={{
-              y: {
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              },
-              opacity: { duration: 0.5 }
-            }}
-            className="absolute bottom-20 right-0 whitespace-nowrap"
-          >
-            <div className="bg-primary text-white text-[9px] font-black uppercase tracking-tighter px-4 py-2 rounded-full shadow-lg border border-white/20 flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform" onClick={() => setIsOpen(true)}>
-              <Cat className="w-3 h-3" />
-              Feed the kitten to support us: {upiId}
-            </div>
-          </motion.div>
-        )}
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}

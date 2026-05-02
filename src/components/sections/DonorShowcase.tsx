@@ -4,8 +4,7 @@ import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase
 import { collection, query, orderBy, where, doc } from 'firebase/firestore';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
-import { Cat, User, Quote, Sparkles } from 'lucide-react';
-import Image from 'next/image';
+import { Heart, User, Quote, Sparkles } from 'lucide-react';
 import { SiteSettings } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { resolveImageUrl } from '@/lib/image-resolver';
@@ -43,7 +42,7 @@ export function DonorShowcase() {
           viewport={{ once: true }}
           className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-6 uppercase tracking-widest"
         >
-          <Cat className="w-3 h-3 text-orange-500" />
+          <Heart className="w-3 h-3" />
           Wall of Gratitude
         </motion.div>
         <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
@@ -93,9 +92,9 @@ function DonorCard({ donor, style }: { donor: any, style: string }) {
     >
       <div className="flex items-center gap-4 w-full">
         <div className="relative">
-          <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-primary/20 group-hover:border-primary transition-colors">
+          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary/20 group-hover:border-primary transition-colors">
             {donor.avatarUrl ? (
-              <Image src={resolveImageUrl(donor.avatarUrl)} alt={donor.name} fill className="object-cover" referrerPolicy="no-referrer" />
+              <img src={resolveImageUrl(donor.avatarUrl)} alt={donor.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-primary/10 flex items-center justify-center">
                 <User className="w-6 h-6 text-primary" />
@@ -103,7 +102,7 @@ function DonorCard({ donor, style }: { donor: any, style: string }) {
             )}
           </div>
           <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-1 shadow-lg ring-2 ring-black">
-            <Cat className="w-2 h-2 text-white" />
+            <Heart className="w-2 h-2 text-white fill-white" />
           </div>
         </div>
         <div className="flex-1 min-w-0">

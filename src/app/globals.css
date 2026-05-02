@@ -5,7 +5,6 @@
 @layer base {
   html {
     scroll-behavior: smooth;
-    scroll-padding-top: 5rem; /* Offset for fixed navbar */
   }
   :root {
     --background: 0 0% 0%;
@@ -105,12 +104,12 @@
 @layer base {
   * {
     @apply border-border;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
   }
   body {
     @apply bg-black text-foreground font-body antialiased selection:bg-primary/30;
     background: #000000;
-    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-                color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: color 0.3s ease;
   }
   .light body {
     @apply bg-[var(--site-gradient)];
@@ -119,15 +118,6 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-displayFont;
   }
-}
-
-/* Fluid interactive base components */
-.smooth-hover {
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.smooth-hover:hover {
-  transform: translateY(-2px);
 }
 
 .glass {

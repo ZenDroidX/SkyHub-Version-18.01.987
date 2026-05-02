@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useFirestore, useDoc, useMemoFirebase, useCollection, useStorage } from '@/firebase';
 import { doc, updateDoc, deleteDoc, query, orderBy, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Palette, Shield, User, Camera, Upload, Loader2, Save, CloudLightning, Bot } from 'lucide-react';
+import { Palette, Shield, User, Camera, Upload, Loader2, Save, CloudLightning, Bot, Plus, Trash2, Layout, Image as LucideImage } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,6 +71,7 @@ function SortableSectionItem({ id, section, onToggle }: { id: string, section: a
     apks: 'Mod APKs',
     root: 'Root Protocols',
     guides: 'Protocol Guides',
+    wallpapers: 'Static Wallpapers',
     donors: 'Donors Wall'
   };
 
@@ -465,6 +466,7 @@ export default function SuperAdminPanel() {
           <TabsTrigger value="donors" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Donors Wall</TabsTrigger>
           <TabsTrigger value="posts" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Posts</TabsTrigger>
           <TabsTrigger value="activity" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Activity Log</TabsTrigger>
+          <TabsTrigger value="templates" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Presets & Combos</TabsTrigger>
           <TabsTrigger value="ai" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">AI Settings</TabsTrigger>
           <TabsTrigger value="layout" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Layout & Architecture</TabsTrigger>
           <TabsTrigger value="seo" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">SEO & Extras</TabsTrigger>
@@ -586,62 +588,117 @@ export default function SuperAdminPanel() {
         </TabsContent>
 
         <TabsContent value="slideshow">
-          <Card>
-            <CardHeader><CardTitle>Slideshow Images</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              {formData.slideshowImages?.map((img: any, index: number) => (
-                <div key={index} className={cn("grid grid-cols-4 gap-2 p-4 border rounded-lg", img.deleted && "opacity-50 bg-muted")}>
-                  <Input placeholder="URL" value={img.url || ''} onChange={(e) => {
-                    const newImages = [...formData.slideshowImages];
-                    newImages[index].url = e.target.value;
-                    setFormData({...formData, slideshowImages: newImages});
-                  }} />
-                  <Select value={img.orientation || 'cover'} onValueChange={(val) => {
-                    const newImages = [...formData.slideshowImages];
-                    newImages[index].orientation = val;
-                    setFormData({...formData, slideshowImages: newImages});
-                  }}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Orientation" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cover">Cover</SelectItem>
-                      <SelectItem value="contain">Contain</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <label>
-                    <span className="text-xs">Height (px):</span>
-                    <Input type="number" placeholder="400" value={String(img.size || '400').replace('px', '')} onChange={(e) => {
-                      const val = parseInt(e.target.value) || 400;
-                      const newImages = [...formData.slideshowImages];
-                      newImages[index].size = `${val}px`;
-                      setFormData({...formData, slideshowImages: newImages});
-                    }} />
-                  </label>
-                  <div className="flex gap-2">
-                    {img.deleted ? (
-                      <Button variant="outline" size="sm" onClick={() => {
-                        const newImages = [...formData.slideshowImages];
-                        newImages[index].deleted = false;
-                        setFormData({...formData, slideshowImages: newImages});
-                      }}>Restore</Button>
-                    ) : (
-                      <Button variant="destructive" size="sm" onClick={() => {
-                        const newImages = [...formData.slideshowImages];
-                        newImages[index].deleted = true;
-                        setFormData({...formData, slideshowImages: newImages});
-                      }}>Delete</Button>
-                    )}
-                  </div>
+          <Card className="rounded-[2.5rem] border-border bg-card overflow-hidden">
+            <CardHeader className="p-8 border-b border-border/50 bg-muted/30 flex items-center justify-between flex-row">
+              <div className="flex items-center gap-4">
+                <LucideImage className="w-8 h-8 text-primary" />
+                <div>
+                  <CardTitle className="text-xl font-black uppercase tracking-tighter">Hero Slideshow Manager</CardTitle>
+                  <CardDescription className="text-[10px] uppercase font-bold opacity-60">Manage visual transmissions for the hero buffer</CardDescription>
                 </div>
-              ))}
-              <Button onClick={() => setFormData({...formData, slideshowImages: [...(formData.slideshowImages || []), {url: '', orientation: 'cover', size: '400px', deleted: false}]})}>Add Image</Button>
-              <Button onClick={handleSave}>Save Changes</Button>
-              
-              <h4 className="text-lg font-bold mt-8">Preview</h4>
-              <div className="bg-muted p-4 rounded-xl">
-                 <Slideshow slideshowImages={formData.slideshowImages || []} />
               </div>
+              <Button 
+                onClick={() => setFormData({...formData, slideshowImages: [...(formData.slideshowImages || []), {url: '', orientation: 'cover', size: '400px'}]})}
+                className="rounded-xl h-10 px-4 bg-primary text-white font-black uppercase text-[10px] tracking-widest"
+              >
+                <Plus className="w-3 h-3 mr-2" /> New Entry
+              </Button>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="space-y-4">
+                {(formData.slideshowImages || []).filter((img: any) => !img.deleted).map((img: any, index: number) => (
+                  <div key={index} className="flex flex-col md:flex-row gap-4 p-5 rounded-[2rem] bg-black/20 border border-border/50 items-center animate-in fade-in slide-in-from-bottom-2">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0 border border-border/50">
+                      {img.url ? <img src={img.url} alt="Slide Preview" className="w-full h-full object-cover" /> : <LucideImage className="w-full h-full p-6 opacity-10" />}
+                    </div>
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                      <div className="md:col-span-1">
+                        <Label className="text-[8px] font-black uppercase mb-1 block opacity-50">Transmission URL</Label>
+                        <Input 
+                          placeholder="https://..." 
+                          value={img.url || ''} 
+                          onChange={(e) => {
+                            const newImages = [...formData.slideshowImages];
+                            newImages[index].url = e.target.value;
+                            setFormData({...formData, slideshowImages: newImages});
+                          }} 
+                          className="h-10 text-[10px] rounded-xl bg-black/40 border-border"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[8px] font-black uppercase mb-1 block opacity-50">Fitment Logic</Label>
+                        <Select 
+                          value={img.orientation || 'cover'} 
+                          onValueChange={(val) => {
+                            const newImages = [...formData.slideshowImages];
+                            newImages[index].orientation = val;
+                            setFormData({...formData, slideshowImages: newImages});
+                          }}
+                        >
+                          <SelectTrigger className="h-10 text-[10px] rounded-xl bg-black/40 border-border">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cover">Cover (Explosive)</SelectItem>
+                            <SelectItem value="contain">Contain (Atomic)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-[8px] font-black uppercase mb-1 block opacity-50">Vertical Buffer</Label>
+                        <div className="flex gap-2">
+                          <Input 
+                            type="number" 
+                            placeholder="400" 
+                            value={String(img.size || '450').replace('px', '')} 
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 450;
+                              const newImages = [...formData.slideshowImages];
+                              newImages[index].size = `${val}px`;
+                              setFormData({...formData, slideshowImages: newImages});
+                            }} 
+                            className="h-10 text-[10px] rounded-xl bg-black/40 border-border"
+                          />
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            onClick={() => {
+                              const newImages = formData.slideshowImages.filter((_: any, i: number) => i !== index);
+                              setFormData({...formData, slideshowImages: newImages});
+                            }} 
+                            className="h-10 w-10 min-w-[40px] rounded-xl"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {(formData.slideshowImages || []).length === 0 && (
+                  <div className="py-20 text-center border-2 border-dashed border-border rounded-[3rem] opacity-30">
+                    <LucideImage className="w-12 h-12 mx-auto mb-4" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Hero buffer is currently offline</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-6 border-t border-border/50">
+                 <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                   <Eye className="w-3 h-3" /> Real-time Simulation
+                 </h4>
+                 <div className="bg-muted/30 p-2 rounded-[2rem] border border-border/50">
+                    <Slideshow slideshowImages={formData.slideshowImages?.filter((i: any) => !i.deleted) || []} />
+                 </div>
+              </div>
+
+              <Button 
+                onClick={handleSave} 
+                className="w-full h-14 bg-primary text-white rounded-[1.5rem] font-black uppercase text-[12px] tracking-[0.2em] shadow-xl shadow-primary/20"
+              >
+                <Save className="w-4 h-4 mr-2" /> Deploy Visual Sequence
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -764,13 +821,13 @@ export default function SuperAdminPanel() {
               <div className="flex flex-col gap-2 p-5 border border-dashed border-primary/50 rounded-2xl">
                 <Input 
                   placeholder="Enter custom notification message..." 
-                  value={newNotificationMessage || ''}
+                  value={newNotificationMessage}
                   onChange={(e) => setNewNotificationMessage(e.target.value)}
                 />
                 <Input 
                   type="number"
                   placeholder="Duration (seconds)..." 
-                  value={newNotificationDuration || ''}
+                  value={newNotificationDuration}
                   onChange={(e) => setNewNotificationDuration(e.target.value)}
                 />
                 <Button onClick={() => handleAddNotification(newNotificationMessage, newNotificationDuration)}>Add Custom Notification</Button>
@@ -802,7 +859,7 @@ export default function SuperAdminPanel() {
                 <div className="flex gap-2">
                   <Input 
                     placeholder="t.me/channel/123 (Manual Link)"
-                    value={manualLink || ''}
+                    value={manualLink}
                     onChange={(e) => setManualLink(e.target.value)}
                     className="h-10 text-[10px] rounded-xl bg-muted/50 border-border"
                   />
@@ -984,6 +1041,124 @@ export default function SuperAdminPanel() {
         <TabsContent value="activity">
            <ActivityLog />
         </TabsContent>
+
+        <TabsContent value="templates">
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="rounded-[2.5rem] border-border bg-card overflow-hidden group hover:border-pink-500 transition-all duration-500 hover:shadow-2xl hover:shadow-pink-500/10">
+                <div className="h-32 bg-gradient-to-br from-[#ff4d94] via-[#ff80bf] to-[#ffb3d9] flex items-center justify-center relative overflow-hidden">
+                   <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent animate-pulse" />
+                   <h4 className="text-4xl font-black text-white drop-shadow-lg tracking-tighter">KITTY</h4>
+                </div>
+                <CardContent className="p-8 space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-black uppercase">Kitty Dream Combo</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      A complete visual overhaul inspired by the iconic Kitty palette. 
+                      Applies pink/reddish gradients, professional rounded corners, 
+                      and specialized POppins typography.
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="bg-pink-500/10 text-pink-500 border-none uppercase text-[8px] font-black">Pink Gradient</Badge>
+                    <Badge variant="secondary" className="bg-red-500/10 text-red-500 border-none uppercase text-[8px] font-black">Red Accents</Badge>
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground border-none uppercase text-[8px] font-black">Poppins Font</Badge>
+                  </div>
+
+                  <Button 
+                    onClick={async () => {
+                      try {
+                        const sRef = doc(db, 'settings', 'global');
+                        // 1. Update Site Branding
+                        await updateDoc(sRef, {
+                          theme: {
+                            name: 'Kitty Dream', 
+                            primary: '#ff4d94', 
+                            bg: '#ffffff', 
+                            gradient: 'linear-gradient(135deg, #ff4d94, #ff80bf, #ffb3d9)',
+                            textColor: '#ffffff',
+                            fontFamily: 'Poppins',
+                            borderRadius: '1.5rem'
+                          },
+                          siteName: "Skyhub: Kitty Edition",
+                          brandName: "KITTYHUB",
+                          heroTitle: "DREAM IN PINK\nEXECUTE IN RED",
+                          heroSubtitle: "Welcome to the custom ROM oasis. Reimagined with Kitty vibes.",
+                          logoUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=kitty&backgroundColor=ff4d94",
+                          slideshowRounding: 40,
+                          slideshowImages: [
+                            { url: 'https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&q=80&w=1200', orientation: 'cover', size: '400px' },
+                            { url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=1200', orientation: 'cover', size: '400px' }
+                          ]
+                        });
+                        
+                        toast({ title: "Kitty Combo Initialized", description: "Global interface redirected to Kitty Dream protocol." });
+                      } catch (e: any) {
+                        toast({ variant: 'destructive', title: "Combo failed", description: e.message });
+                      }
+                    }}
+                    className="w-full h-12 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest transition-all hover:scale-[1.02] active:scale-95"
+                  >
+                    Execute Kitty Combo
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-[2.5rem] border-border bg-card overflow-hidden group hover:border-red-600 transition-all duration-500">
+                <div className="h-32 bg-gradient-to-br from-[#e60000] to-[#990000] flex items-center justify-center">
+                   <h4 className="text-4xl font-black text-white drop-shadow-lg tracking-tighter uppercase">Red Alert</h4>
+                </div>
+                <CardContent className="p-8 space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-black uppercase">Red Velvet Combo</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      High-intensity dark theme with blood-red accents. 
+                      Perfect for performance-focused sites and specialized ROM releases.
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="bg-red-500/10 text-red-500 border-none uppercase text-[8px] font-black">Deep Red</Badge>
+                    <Badge variant="secondary" className="bg-black text-white border-none uppercase text-[8px] font-black">Pure Dark</Badge>
+                  </div>
+
+                  <Button 
+                    onClick={async () => {
+                      try {
+                        await applyTheme({
+                          name: 'Red Velvet',
+                          primary: '#e60000',
+                          bg: '#000000',
+                          gradient: 'linear-gradient(135deg, #e60000, #990000)',
+                          textColor: '#ffffff',
+                          fontFamily: 'Inter',
+                          borderRadius: '0.5rem'
+                        });
+                        
+                        const sRef = doc(db, 'settings', 'global');
+                        await updateDoc(sRef, {
+                          siteName: "Skyhub: Red Edition",
+                          brandName: "SKYHUB RED",
+                          heroTitle: "PERFORMANCE\nREDEFINED IN RED",
+                          heroSubtitle: "The apex of custom ROM portals. Crimson protocols engaged.",
+                          logoUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=red&backgroundColor=e60000"
+                        });
+                        
+                        toast({ title: "Red Velvet Applied", description: "Interface synchronized with Red Alert protocol." });
+                      } catch (e: any) {
+                        toast({ variant: 'destructive', title: "Combo failed", description: e.message });
+                      }
+                    }}
+                    className="w-full h-12 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest"
+                  >
+                    Engage Red Alert
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
         
         <TabsContent value="ai">
           <Card className="rounded-[2.5rem] border-border bg-card overflow-hidden">
@@ -1023,43 +1198,90 @@ export default function SuperAdminPanel() {
 
         <TabsContent value="layout">
           <Card className="rounded-[2.5rem] border-border bg-card overflow-hidden">
-            <CardHeader className="border-b border-border/50 bg-muted/30 flex items-center justify-between flex-row">
-              <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                <Menu className="w-4 h-4 text-primary" /> Site Architecture
-              </CardTitle>
-              <Badge variant="outline" className="text-[8px] uppercase tracking-widest">Dnd Enabled</Badge>
-            </CardHeader>
-            <CardContent className="p-8 space-y-6">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Reorder and toggle visibility of homepage sections.</p>
-              
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <div className="space-y-2">
-                  <SortableContext
-                    items={formData?.layoutConfig?.map((s: any) => s.id) || []}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {formData?.layoutConfig?.map((section: any) => (
-                      <SortableSectionItem 
-                        key={section.id} 
-                        id={section.id} 
-                        section={section} 
-                        onToggle={toggleSection} 
-                      />
-                    ))}
-                  </SortableContext>
+            <CardHeader className="border-b border-border/50 bg-muted/30 flex items-center justify-between flex-row p-8">
+              <div className="flex items-center gap-4">
+                <Layout className="w-8 h-8 text-primary" />
+                <div>
+                  <CardTitle className="text-xl font-black uppercase tracking-tighter">Architecture & Identity</CardTitle>
+                  <CardDescription className="text-[10px] uppercase font-bold opacity-60">Global structure and protocol branding</CardDescription>
                 </div>
-              </DndContext>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-10">
+              {/* Branding Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 bg-primary rounded-full" />
+                  <h3 className="text-xs font-black uppercase tracking-widest text-primary">Protocol Identity</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Site Name (Browser Title)</Label>
+                    <Input 
+                      value={formData.siteName || ''} 
+                      onChange={(e) => setFormData({...formData, siteName: e.target.value})}
+                      placeholder="e.g. SkyHub Protocol"
+                      className="h-14 rounded-2xl bg-black/20 border-border"
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Brand Name (Navbar)</Label>
+                    <Input 
+                      value={formData.brandName || ''} 
+                      onChange={(e) => setFormData({...formData, brandName: e.target.value})}
+                      placeholder="e.g. SKYHUB"
+                      className="h-14 rounded-2xl bg-black/20 border-border"
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Favicon URL</Label>
+                    <Input 
+                      value={formData.faviconUrl || ''} 
+                      onChange={(e) => setFormData({...formData, faviconUrl: e.target.value})}
+                      placeholder="e.g. https://.../favicon.ico"
+                      className="h-14 rounded-2xl bg-black/20 border-border"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Layout Section */}
+              <div className="space-y-6 border-t border-border/50 pt-10">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 bg-primary rounded-full" />
+                  <h3 className="text-xs font-black uppercase tracking-widest text-primary">Section Sequence</h3>
+                </div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Reorder and toggle visibility of homepage modules.</p>
+                
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="space-y-2">
+                    <SortableContext
+                      items={formData?.layoutConfig?.map((s: any) => s.id) || []}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {formData?.layoutConfig?.map((section: any) => (
+                        <SortableSectionItem 
+                          key={section.id} 
+                          id={section.id} 
+                          section={section} 
+                          onToggle={toggleSection} 
+                        />
+                      ))}
+                    </SortableContext>
+                  </div>
+                </DndContext>
+              </div>
 
               <div className="pt-6">
                 <Button 
                   onClick={handleSave} 
-                  className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-black uppercase text-[10px] tracking-widest"
+                  className="w-full h-14 bg-primary text-white rounded-[1.5rem] font-black uppercase text-[12px] tracking-[0.2em] shadow-xl shadow-primary/20"
                 >
-                  <Save className="w-4 h-4 mr-2" /> Commit New Architecture
+                  <Save className="w-4 h-4 mr-2" /> Synchronize All Changes
                 </Button>
               </div>
             </CardContent>

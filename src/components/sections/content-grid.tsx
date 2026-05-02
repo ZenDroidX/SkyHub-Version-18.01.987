@@ -67,16 +67,8 @@ import { MediaPreview } from '@/components/MediaPreview';
 import { resolveImageUrl } from '@/lib/image-resolver';
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.98 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    scale: 1,
-    transition: { 
-      duration: 0.6, 
-      ease: [0.22, 1, 0.36, 1] as [number, number, number, number]
-    } 
-  }
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
 };
 
 const ICON_REGISTRY: Record<string, React.ReactNode> = {
@@ -345,21 +337,8 @@ export function ROMGrid({ roms, isLoading }: { roms: any[], isLoading: boolean }
   return (
     <section id="roms" className="py-32 max-w-7xl mx-auto px-6">
       <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-20">CUSTOM <span className="text-muted-foreground/40 italic">ROMs</span></h2>
-      <motion.div 
-        layout
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" 
-        initial="hidden" 
-        whileInView="visible" 
-        viewport={{ once: true, margin: "-100px" }} 
-        transition={{ staggerChildren: 0.1 }}
-      >
-        <AnimatePresence mode="popLayout">
-          {filteredRoms.map((rom) => (
-            <motion.div layout key={rom.id}>
-              <ROMCard rom={rom} />
-            </motion.div>
-          ))}
-        </AnimatePresence>
+      <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.05 }}>
+        {filteredRoms.map((rom) => <ROMCard key={rom.id} rom={rom} />)}
       </motion.div>
     </section>
   );
@@ -394,7 +373,7 @@ export function ModuleGrid({ modules, isLoading }: { modules: any[], isLoading: 
   return (
     <section id="modules" className="py-32 max-w-7xl mx-auto px-6">
       <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-20">MODULE</h2>
-      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} transition={{ staggerChildren: 0.08 }}>
+      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.05 }}>
         {modules.map((mod) => <ModuleCard key={mod.id} mod={mod} />)}
       </motion.div>
     </section>
@@ -447,7 +426,7 @@ export function ModApkGrid({ apks, isLoading }: { apks: any[], isLoading: boolea
   return (
     <section id="rooted-apks" className="py-32 max-w-7xl mx-auto px-6">
       <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-20">MOD <span className="text-red-600">APKs</span></h2>
-      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} transition={{ staggerChildren: 0.08 }}>
+      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.05 }}>
         {apks.map((apk) => <ModApkCard key={apk.id} apk={apk} />)}
       </motion.div>
     </section>
@@ -461,7 +440,7 @@ export function RootGrid({ packages, isLoading }: { packages: any[], isLoading: 
   return (
     <section id="root" className="py-32 max-w-7xl mx-auto px-6">
       <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-20">ROOT <span className="text-blue-600">PROTOCOL</span></h2>
-      <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} transition={{ staggerChildren: 0.12 }}>
+      <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.05 }}>
         {packages.map((pkg) => (
           <motion.div key={pkg.id} variants={cardVariants} whileHover={{ y: -5 }}>
             <Card className="glass border-border p-10 rounded-[3rem] transition-all">
@@ -507,7 +486,7 @@ export function CustomGrid({ section, items, isLoading }: { section: any, items:
   return (
     <section id={`custom-${section.id}`} className="py-32 max-w-7xl mx-auto px-6">
       <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-20" style={{ color: section.color || 'inherit' }}>{section.label}</h2>
-      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} transition={{ staggerChildren: 0.08 }}>
+      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.05 }}>
         {items.map((item) => (
           <motion.div key={item.id} variants={cardVariants} whileHover={{ y: -5 }}>
             <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">

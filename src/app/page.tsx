@@ -121,7 +121,7 @@ export default function Home() {
       </motion.div>
 
       <Footer />
-      <PaymentFloatingButton settings={globalSettings || undefined} />
+      <PaymentFloatingButton settings={globalSettings} />
     </main>
   );
 }

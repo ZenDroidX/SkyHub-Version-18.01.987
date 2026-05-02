@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
@@ -95,7 +94,7 @@ import {
   updateDocumentNonBlocking,
   useStorage
 } from '@/firebase';
-import { collection, doc, setDoc, getDoc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '@/lib/utils';
@@ -388,6 +387,7 @@ export default function DashboardPage() {
     { id: 'guides', label: 'Protocols', icon: <FileText className="w-4 h-4" />, permission: 'canManageGuides' },
     { id: 'branding', label: 'Logo Mgmt', icon: <LucideImage className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'root', label: 'Root Protocol', icon: <Zap className="w-4 h-4" />, permission: 'adminOnly' },
+    { id: 'wallpapers', label: 'Wallpaper', icon: <ImageIcon className="w-4 h-4" />, permission: 'canManageWallpapers' },
     { id: 'visuals', label: 'Visual Protocols', icon: <Monitor className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'ai-extract', label: 'AI Terminal', icon: <Bot className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'telegram-sync', label: 'Telegram Sync', icon: <CloudLightning className="w-4 h-4" />, permission: 'adminOnly' },
@@ -599,7 +599,7 @@ export default function DashboardPage() {
       if (collectionName === 'guides') collectionName = 'tutorials';
       else if (collectionName === 'root') collectionName = 'root-packages';
       
-      const validCollections = ['roms', 'modules', 'mod-apks', 'tutorials', 'root-packages'];
+      const validCollections = ['roms', 'modules', 'mod-apks', 'wallpapers', 'tutorials', 'root-packages'];
       if (!validCollections.includes(collectionName)) {
         collectionName = 'roms';
       }
@@ -1029,9 +1029,7 @@ export default function DashboardPage() {
 
                 {editProfileImage && (
                   <div className="flex justify-center p-4">
-                    <div className="relative w-24 h-24">
-                      <Image src={editProfileImage} alt="Profile Preview" fill className="rounded-full object-cover border-4 border-primary/20" referrerPolicy="no-referrer" />
-                    </div>
+                    <img src={editProfileImage} alt="Profile Preview" className="w-24 h-24 rounded-full object-cover border-4 border-primary/20" />
                   </div>
                 )}
                 <Button 
@@ -1121,9 +1119,7 @@ export default function DashboardPage() {
                     <div className="space-y-4">
                       <Label className="text-[10px] font-black uppercase tracking-widest">Favicon Preview</Label>
                       <div className="p-6 bg-black/40 rounded-2xl border border-border flex items-center justify-center">
-                        <div className="relative w-12 h-12">
-                          <Image src={faviconUrl} fill className="object-contain" alt="Favicon Preview" referrerPolicy="no-referrer" />
-                        </div>
+                        <img src={faviconUrl} className="w-12 h-12 object-contain" alt="Favicon Preview" />
                       </div>
                     </div>
                   )}
@@ -1148,11 +1144,11 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest">Color 1</Label>
-                      <Input type="color" value={gradientColors.color1} onChange={(e) => setGradientColors({...gradientColors, color1: e.target.value})} className="h-10 w-full" />
+                      <Input type="color" value={gradientColors.color1 || ''} onChange={(e) => setGradientColors({...gradientColors, color1: e.target.value})} className="h-10 w-full" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest">Color 2</Label>
-                      <Input type="color" value={gradientColors.color2} onChange={(e) => setGradientColors({...gradientColors, color2: e.target.value})} className="h-10 w-full" />
+                      <Input type="color" value={gradientColors.color2 || ''} onChange={(e) => setGradientColors({...gradientColors, color2: e.target.value})} className="h-10 w-full" />
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -1195,9 +1191,7 @@ export default function DashboardPage() {
                       <div className="space-y-4">
                         <Label className="text-[10px] font-black uppercase tracking-widest">Initialization Preview</Label>
                         <div className="p-6 bg-black/40 rounded-2xl border border-border flex items-center justify-center">
-                          <div className="relative h-20 w-40">
-                            <Image src={logoPreview} fill className="object-contain" alt="Preview" referrerPolicy="no-referrer" />
-                          </div>
+                          <img src={logoPreview} className="max-h-20 object-contain" alt="Preview" />
                         </div>
                       </div>
                     )}
@@ -1217,9 +1211,7 @@ export default function DashboardPage() {
                     <Label className="text-[10px] font-black uppercase tracking-widest">Active Identity</Label>
                     <div className="h-48 glass border-white/5 rounded-3xl flex items-center justify-center p-8">
                       {settings?.logoUrl ? (
-                        <div className="relative h-full w-full">
-                          <Image src={settings.logoUrl} fill className="object-contain" alt="Current Logo" referrerPolicy="no-referrer" />
-                        </div>
+                        <img src={settings.logoUrl} className="max-h-full object-contain" alt="Current Logo" />
                       ) : (
                         <p className="text-[10px] font-black uppercase text-muted-foreground italic">Standard Typography Active</p>
                       )}
@@ -1413,7 +1405,7 @@ export default function DashboardPage() {
                           <TabsContent value="telegram" className="mt-6 space-y-4">
                             <Label className="text-[9px] font-black uppercase ml-1">Paste Broadcast Content</Label>
                             <Textarea 
-                              value={bulkTelegramText || ''} 
+                              value={bulkTelegramText} 
                               onChange={(e) => setBulkTelegramText(e.target.value)} 
                               placeholder="PASTE TELEGRAM POST CONTENT..." 
                               className="min-h-[200px] bg-muted rounded-2xl p-6 text-[11px] font-mono border-border"
@@ -1431,7 +1423,7 @@ export default function DashboardPage() {
                           <TabsContent value="url" className="mt-6 space-y-4">
                             <Label className="text-[9px] font-black uppercase ml-1">Remote Endpoint URL</Label>
                             <Input 
-                              value={bulkUrl || ''} 
+                              value={bulkUrl} 
                               onChange={(e) => setBulkUrl(e.target.value)} 
                               placeholder="HTTPS://EXTERNAL-SOURCE.COM/INDEX.HTML" 
                               className="h-14 bg-muted rounded-2xl px-6 font-mono text-[11px]"
@@ -1666,9 +1658,9 @@ export default function DashboardPage() {
                   <Card key={u.id} className="p-8 rounded-[2.5rem] bg-muted/30 border-border flex flex-col gap-8 hover:bg-muted/50 transition-all shadow-sm">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="relative w-16 h-16 rounded-[1.5rem] bg-primary/10 flex items-center justify-center overflow-hidden shrink-0 border border-border shadow-inner">
+                        <div className="w-16 h-16 rounded-[1.5rem] bg-primary/10 flex items-center justify-center overflow-hidden shrink-0 border border-border shadow-inner">
                           {u.profileImageUrl ? (
-                            <Image src={u.profileImageUrl} fill className="object-cover" alt="Profile" referrerPolicy="no-referrer" />
+                            <img src={u.profileImageUrl} className="w-full h-full object-cover" alt="Profile" />
                           ) : (
                             <UserCircle className="w-8 h-8 text-primary/40" />
                           )}
@@ -1903,7 +1895,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {(activeTab === 'roms') && (
+              {(activeTab === 'roms' || activeTab === 'wallpapers') && (
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase ml-1">Category / Tag</Label>
                   <Input name="category" placeholder="E.g. AOSP, Nature, 60fps" className="bg-muted rounded-xl h-12" />
@@ -1948,7 +1940,7 @@ export default function DashboardPage() {
               <TabsTrigger value="bulk" className="text-[9px] uppercase font-black">Bulk Add</TabsTrigger>
             </TabsList>
             <TabsContent value="telegram" className="space-y-6">
-              <Textarea value={bulkTelegramText} onChange={(e) => setBulkTelegramText(e.target.value)} placeholder="PASTE TELEGRAM BROADCAST CONTENT..." className="bg-muted min-h-[250px] rounded-2xl p-6 text-[10px] font-code" />
+              <Textarea value={bulkTelegramText || ''} onChange={(e) => setBulkTelegramText(e.target.value)} placeholder="PASTE TELEGRAM BROADCAST CONTENT..." className="bg-muted min-h-[250px] rounded-2xl p-6 text-[10px] font-code" />
               <Button onClick={handleBulkExtract} disabled={isExtracting} className="w-full h-12 bg-blue-600 text-white uppercase text-[10px] font-black tracking-widest rounded-xl">
                 {isExtracting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Analyze Transmission'}
               </Button>
@@ -2021,7 +2013,7 @@ export default function DashboardPage() {
               )}
             </TabsContent>
             <TabsContent value="links" className="space-y-6">
-              <Textarea value={bulkLinksText} onChange={(e) => setBulkLinksText(e.target.value)} placeholder="PASTE ONE LINK PER LINE FOR AUTO-SCANNING..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
+              <Textarea value={bulkLinksText || ''} onChange={(e) => setBulkLinksText(e.target.value)} placeholder="PASTE ONE LINK PER LINE FOR AUTO-SCANNING..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
               <Button onClick={handleBulkLinkSync} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Initialize Link Sync Series</Button>
             </TabsContent>
             <TabsContent value="file" className="space-y-6">
@@ -2113,7 +2105,7 @@ export default function DashboardPage() {
               )}
             </TabsContent>
             <TabsContent value="bulk" className="space-y-6">
-              <Textarea value={bulkAddLinks} onChange={(e) => setBulkAddLinks(e.target.value)} placeholder="PASTE IMAGE LINKS (ONE PER LINE)..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
+              <Textarea value={bulkAddLinks || ''} onChange={(e) => setBulkAddLinks(e.target.value)} placeholder="PASTE IMAGE LINKS (ONE PER LINE)..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
               <Button onClick={handleBulkAdd} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Add to {menuItems.find(i => i.id === activeTab)?.label}</Button>
             </TabsContent>
           </Tabs>
@@ -2184,7 +2176,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {(activeTab === 'roms') && (
+              {(activeTab === 'roms' || activeTab === 'wallpapers') && (
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase ml-1">Category / Tag</Label>
                   <Input name="category" defaultValue={editingItem?.category} placeholder="E.g. AOSP, Nature, 60fps" className="bg-muted rounded-xl h-12" />

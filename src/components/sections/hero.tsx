@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Smartphone, Settings, Cpu, Zap, Shield, Users, Cat, QrCode, Copy, Check, Send, MessageSquare, Sparkles } from 'lucide-react';
-import Image from 'next/image';
+import { Smartphone, Settings, Cpu, Zap, Shield, Users, Heart, QrCode, Copy, Check, Send, MessageSquare, Sparkles } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -135,8 +134,8 @@ export function Hero() {
             
             <div className="relative z-10 flex items-center gap-3">
               {telegramLogo ? (
-                <div className="relative w-6 h-6 rounded-full overflow-hidden bg-background/50 border border-border/20 flex items-center justify-center group-hover:border-blue-500/50 transition-all">
-                  <Image src={resolveImageUrl(telegramLogo)} fill className="object-contain" alt="Logo" referrerPolicy="no-referrer" />
+                <div className="w-6 h-6 rounded-full overflow-hidden bg-background/50 border border-border/20 flex items-center justify-center group-hover:border-blue-500/50 transition-all">
+                  <img src={resolveImageUrl(telegramLogo)} className="w-full h-full object-contain" alt="Logo" />
                 </div>
               ) : <Send className="w-4 h-4" />}
               <span>Official Channel</span>
@@ -192,7 +191,7 @@ export function Hero() {
               variant="outline" 
               className="h-16 px-10 rounded-2xl border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 font-black text-[11px] uppercase tracking-[0.2em] gap-4 transition-all duration-300 w-full sm:w-auto"
             >
-              <Cat className="w-4 h-4" />
+              <Heart className="w-4 h-4 fill-current" />
               Support
             </Button>
           </motion.div>
@@ -233,7 +232,7 @@ export function Hero() {
           </DialogHeader>
           
           <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            {qrLink && <Image src={resolveImageUrl(qrLink)} alt="Payment QR" fill className="object-contain" referrerPolicy="no-referrer" />}
+            {qrLink && <img src={resolveImageUrl(qrLink)} alt="Payment QR" className="w-full h-full object-contain" />}
           </div>
 
           <div className="w-full space-y-4">

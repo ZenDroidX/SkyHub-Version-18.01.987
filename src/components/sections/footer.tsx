@@ -8,7 +8,7 @@ import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Mail, Cat } from 'lucide-react';
+import { Shield, Mail, Heart } from 'lucide-react';
 
 export function Footer() {
   const db = useFirestore();
@@ -55,7 +55,7 @@ export function Footer() {
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                  <Cat className="w-3.5 h-3.5 text-orange-500" />
+                  <Heart className="w-3.5 h-3.5 text-red-500" />
                   Core Maintainer
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">

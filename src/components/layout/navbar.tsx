@@ -1,7 +1,7 @@
 
 "use client";
 
-import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Cpu, 
@@ -20,7 +20,7 @@ import {
   ChevronRight,
   Terminal,
   Loader2,
-  Cat,
+  Heart,
   Copy,
   Check,
   Send,
@@ -141,6 +141,7 @@ export function Navbar() {
     { name: 'ROMs', href: '/#roms', icon: <Cpu className="w-3.5 h-3.5" /> },
     { name: 'Modules', href: '/#modules', icon: <Smartphone className="w-3.5 h-3.5" /> },
     { name: 'Mod APKs', href: '/#rooted-apks', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
+    { name: 'Wallpapers', href: '/#wallpapers', icon: <ImageIcon className="w-3.5 h-3.5" /> },
     { name: 'Tutorials', href: '/#guides', icon: <BookOpen className="w-3.5 h-3.5" /> },
   ];
 
@@ -158,7 +159,7 @@ export function Navbar() {
       <nav className="hidden md:flex items-center gap-1.5 glass-pill px-2 py-1.5 rounded-full pointer-events-auto border border-border shadow-2xl">
         <Link href="/" className="ml-4 mr-2 flex items-center">
           {logoUrl ? (
-            <Image src={logoUrl} width={100} height={40} className="h-10 w-auto object-contain py-1" alt="Logo" referrerPolicy="no-referrer" />
+            <img src={logoUrl} className="h-10 w-auto object-contain py-1" alt="Logo" />
           ) : (
             <span className="font-black text-sm uppercase tracking-tighter">{brandName}</span>
           )}
@@ -189,7 +190,7 @@ export function Navbar() {
           <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground" />
           <Input 
             placeholder="Search..." 
-            value={searchQuery}
+            value={searchQuery || ''}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -220,7 +221,7 @@ export function Navbar() {
             onClick={handleSupportClick}
             className="w-9 h-9 rounded-full hover:bg-muted text-red-500 flex items-center justify-center"
           >
-            <Cat className="w-4 h-4" />
+            <Heart className="w-4 h-4 fill-current" />
           </Button>
         </motion.div>
 
@@ -270,7 +271,7 @@ export function Navbar() {
         <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
           <Link href="/" className="flex items-center">
             {logoUrl ? (
-              <Image src={logoUrl} width={100} height={40} className="h-10 w-auto object-contain py-1" alt="Logo" referrerPolicy="no-referrer" />
+              <img src={logoUrl} className="h-10 w-auto object-contain py-1" alt="Logo" />
             ) : (
               <span className="font-black text-xl uppercase tracking-tighter">{brandName}</span>
             )}
@@ -295,7 +296,7 @@ export function Navbar() {
               onClick={handleSupportClick}
               className="w-10 h-10 rounded-full text-red-500 flex items-center justify-center hover:bg-red-500/10 transition-all"
             >
-              <Cat className="w-5 h-5" />
+              <Heart className="w-5 h-5 fill-current" />
             </Button>
           </motion.div>
 
@@ -385,7 +386,7 @@ export function Navbar() {
                     variant="outline"
                     className="w-full h-12 rounded-2xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all text-[9px]"
                   >
-                    <Cat className="w-4 h-4" />
+                    <Heart className="w-4 h-4 fill-current" />
                     Support Hub
                   </Button>
                 </motion.div>
@@ -479,7 +480,7 @@ export function Navbar() {
           </DialogHeader>
           
           <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            <Image src={qrLink} alt="Payment QR" fill className="object-contain" referrerPolicy="no-referrer" />
+            <img src={qrLink} alt="Payment QR" className="w-full h-full object-contain" />
           </div>
 
           <div className="w-full space-y-4">

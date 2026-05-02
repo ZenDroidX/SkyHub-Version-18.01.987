@@ -11,8 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Edit2, Upload, User, Cat, Settings2, Eye, EyeOff, Save } from 'lucide-react';
-import Image from 'next/image';
+import { Loader2, Plus, Trash2, Edit2, Upload, User, Heart, Settings2, Eye, EyeOff, Save } from 'lucide-react';
 import { SiteSettings } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -214,7 +213,7 @@ export default function DonorManager() {
       {/* Donor List / CRUD */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-          <Cat className="w-4 h-4 text-primary" /> Active Donors
+          <Heart className="w-4 h-4 text-primary" /> Active Donors
         </h3>
         <Button 
           onClick={() => setIsAdding(!isAdding)} 
@@ -237,30 +236,30 @@ export default function DonorManager() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Donor Name</Label>
-                    <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. John Doe" className="bg-background" />
+                    <Input value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. John Doe" className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Username / Handle</Label>
-                    <Input value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} placeholder="e.g. johndoe" className="bg-background" />
+                    <Input value={formData.username || ''} onChange={(e) => setFormData({...formData, username: e.target.value})} placeholder="e.g. johndoe" className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Message</Label>
-                    <Input value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} placeholder="e.g. Keep up the great work!" className="bg-background" />
+                    <Input value={formData.message || ''} onChange={(e) => setFormData({...formData, message: e.target.value})} placeholder="e.g. Keep up the great work!" className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Donation Amount</Label>
-                    <Input value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} placeholder="e.g. $50" className="bg-background" />
+                    <Input value={formData.amount || ''} onChange={(e) => setFormData({...formData, amount: e.target.value})} placeholder="e.g. $50" className="bg-background" />
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Avatar / Logo</Label>
                     <div className="flex gap-4 items-center">
-                      <div className="w-16 h-16 rounded-full bg-muted border-2 border-border overflow-hidden shrink-0 relative">
-                        {formData.avatarUrl ? <Image src={resolveImageUrl(formData.avatarUrl)} alt="Preview" fill className="object-cover" referrerPolicy="no-referrer" /> : <User className="w-full h-full p-4 opacity-20" />}
+                      <div className="w-16 h-16 rounded-full bg-muted border-2 border-border overflow-hidden shrink-0">
+                        {formData.avatarUrl ? <img src={resolveImageUrl(formData.avatarUrl)} alt="Preview" className="w-full h-full object-cover" /> : <User className="w-full h-full p-4 opacity-20" />}
                       </div>
                       <div className="flex-1 space-y-2">
-                        <Input value={formData.avatarUrl} onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})} placeholder="Image URL (Google Drive / Direct)" className="bg-background text-xs" />
+                        <Input value={formData.avatarUrl || ''} onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})} placeholder="Image URL (Google Drive / Direct)" className="bg-background text-xs" />
                         <p className="text-[8px] text-muted-foreground">For Google Photos: Open image, right click &quot;Copy Image Address&quot;</p>
                         <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border cursor-pointer hover:bg-muted transition-colors">
                           <Upload className="w-4 h-4" />
@@ -293,9 +292,9 @@ export default function DonorManager() {
           <Card key={donor.id} className={cn("rounded-3xl border-border bg-card hover:border-primary/30 transition-all group overflow-hidden", !donor.visible && "opacity-60 grayscale")}>
             <CardContent className="p-6 flex flex-col items-center text-center">
               <div className="relative mb-4">
-                <div className="w-20 h-20 rounded-full border-4 border-muted overflow-hidden group-hover:border-primary/20 transition-all relative">
+                <div className="w-20 h-20 rounded-full border-4 border-muted overflow-hidden group-hover:border-primary/20 transition-all">
                   {donor.avatarUrl ? (
-                    <Image src={resolveImageUrl(donor.avatarUrl)} alt={donor.name || 'Donor'} fill className="object-cover" referrerPolicy="no-referrer" />
+                    <img src={resolveImageUrl(donor.avatarUrl)} alt={donor.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-muted flex items-center justify-center"><User className="w-10 h-10 opacity-20" /></div>
                   )}

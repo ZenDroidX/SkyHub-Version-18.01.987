@@ -23,7 +23,6 @@ export function TelegramLoginWidget({ botName, onAuth, className }: TelegramLogi
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const currentContainer = containerRef.current;
     // Callback for the widget
     (window as any).onTelegramAuth = (user: TelegramUser) => {
       onAuth(user);
@@ -37,13 +36,13 @@ export function TelegramLoginWidget({ botName, onAuth, className }: TelegramLogi
     script.setAttribute('data-onauth', 'onTelegramAuth(user)');
     script.setAttribute('data-request-access', 'write');
 
-    if (currentContainer) {
-      currentContainer.appendChild(script);
+    if (containerRef.current) {
+      containerRef.current.appendChild(script);
     }
 
     return () => {
-      if (currentContainer) {
-        currentContainer.innerHTML = '';
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
       }
       delete (window as any).onTelegramAuth;
     };

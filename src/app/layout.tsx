@@ -36,12 +36,20 @@ export async function generateMetadata(): Promise<Metadata> {
     if (!res.ok) throw new Error('Failed to fetch settings');
     
     const data = await res.json();
-    const seo = data.fields?.seo?.mapValue?.fields;
+    const fields = data.fields;
+    const seo = fields?.seo?.mapValue?.fields;
+    const faviconUrl = fields?.faviconUrl?.stringValue;
+    const siteName = fields?.siteName?.stringValue;
     
     return {
-      title: seo?.title?.stringValue || "Skyhub - Professional Hub",
+      title: seo?.title?.stringValue || siteName || "Skyhub - Professional Hub",
       description: seo?.description?.stringValue || "Custom ROMs, Modules and System Modifications.",
       keywords: seo?.keywords?.stringValue || "android, roms, custom, modules",
+      icons: {
+        icon: faviconUrl || '/favicon.ico',
+        shortcut: faviconUrl || '/favicon.ico',
+        apple: faviconUrl || '/apple-touch-icon.png',
+      },
       openGraph: {
         images: [seo?.ogImage?.stringValue || "/og-image.png"],
       }
