@@ -1,11 +1,41 @@
 
-import firebaseConfig from '../../firebase-applet-config.json';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore, getFirestore, doc, getDocFromServer, Firestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage';
 
+import firebaseConfigFile from '../../firebase-applet-config.json';
 import { errorEmitter } from './error-emitter';
+
+// Robust configuration loading for universal deployment (Vercel, Netlify, Cloudflare, etc.)
+const getFirebaseConfig = () => {
+  // Priority 1: Individual Environment Variables (Standard for Vercel/Netlify)
+  if (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    return {
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+      firestoreDatabaseId: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || firebaseConfigFile.firestoreDatabaseId,
+    };
+  }
+
+  // Priority 2: Full JSON string config (Alternative common pattern)
+  if (process.env.NEXT_PUBLIC_FIREBASE_CONFIG) {
+    try {
+      return JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
+    } catch (e) {
+      console.error("Failed to parse NEXT_PUBLIC_FIREBASE_CONFIG", e);
+    }
+  }
+
+  // Last Resort: Fallback to local config file (Default in AI Studio)
+  return firebaseConfigFile;
+};
+
+const firebaseConfig = getFirebaseConfig();
 
 let firestoreInstance: Firestore | null = null;
 
