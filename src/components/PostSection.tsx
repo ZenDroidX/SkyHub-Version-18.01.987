@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { ExternalLink } from 'lucide-react';
 
 export default function PostSection() {
   const db = useFirestore();
-  const postsRef = collection(db, 'posts');
+  const postsRef = useMemo(() => collection(db, 'posts'), [db]);
   const [posts, setPosts] = useState<any[]>([]);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export default function PostSection() {
       setPosts(fetchedPosts);
     };
     fetchPosts();
-  }, [db]);
+  }, [postsRef]);
 
   return (
     <section className="py-12">

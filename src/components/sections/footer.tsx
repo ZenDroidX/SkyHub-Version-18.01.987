@@ -8,7 +8,7 @@ import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Mail, Heart } from 'lucide-react';
+import { Shield, Mail, Cat } from 'lucide-react';
 
 export function Footer() {
   const db = useFirestore();
@@ -55,7 +55,7 @@ export function Footer() {
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                  <Heart className="w-3.5 h-3.5 text-red-500" />
+                  <Cat className="w-3.5 h-3.5 text-orange-500" />
                   Core Maintainer
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
@@ -68,7 +68,7 @@ export function Footer() {
         </Card>
 
         <div className="mt-24 text-center space-y-4 opacity-40">
-          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground">Sky Hub Ecosystem © 2025</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground">Sky Hub Ecosystem (c) 2025</p>
           <div className="flex gap-6 justify-center text-[8px] font-black uppercase tracking-widest text-muted-foreground">
             <span className="hover:text-white cursor-pointer transition-colors">Security Protocol</span>
             <span className="hover:text-white cursor-pointer transition-colors">API Endpoint</span>

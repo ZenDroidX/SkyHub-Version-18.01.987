@@ -23,6 +23,7 @@ const ResourceExtractionSchema = z.object({
   description: z.string().describe('Detailed description, features, or changelog.'),
   downloadUrl: z.string().describe('Primary download or direct asset link.'),
   imageUrl: z.string().optional().describe('Preview image or thumbnail URL.'),
+  bootAnimationUrl: z.string().optional().describe('Link to a custom boot animation GIF or video if available.'),
   mirrors: z.array(z.string()).optional().describe('Additional redundant download links.'),
   screenshots: z.array(z.string()).optional().describe('System screenshot URLs.'),
   addons: z.array(z.object({
@@ -100,10 +101,10 @@ const extractRomsFlow = ai.defineFlow(
         .substring(0, 250000); // Massive context window for large index.html files
 
       console.log('Sending extraction prompt for URL:', input.url, 'Cleaned HTML size:', cleanedHtml.length);
-      const { output } = await ai.generate(extractResourcesPrompt({ 
+      const { output } = await extractResourcesPrompt({ 
         html: cleanedHtml, 
         url: input.url 
-      }));
+      });
       
       console.log('Extraction sequence complete. Found:', output?.roms?.length || 0, 'items.');
       if (output?.roms) {
@@ -134,10 +135,10 @@ const extractRomsFromRawHtmlFlow = ai.defineFlow(
         .substring(0, 250000);
 
     console.log('Sending extraction prompt for raw HTML/Telegram content... Size:', cleanedHtml.length);
-    const { output } = await ai.generate(extractResourcesPrompt({ 
+    const { output } = await extractResourcesPrompt({ 
       html: cleanedHtml, 
       url: input.url || 'local-input' 
-    }));
+    });
     
     console.log('Extraction sequence complete. Found:', output?.roms?.length || 0, 'items.');
     if (output?.roms) {

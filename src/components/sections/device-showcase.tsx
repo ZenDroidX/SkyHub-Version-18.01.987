@@ -4,6 +4,7 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
 import { Cpu, Camera, Zap, Smartphone } from 'lucide-react';
+import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export function DeviceShowcase() {
@@ -55,13 +56,14 @@ export function DeviceShowcase() {
           className="relative w-[280px] md:w-[380px] aspect-[9/19] [transform-style:preserve-3d]"
         >
           {/* Device Body Simulation - Reflecting the Sky Blue Redmi 12 5G */}
-          <div className="absolute inset-0 bg-[#E3F2FD] rounded-[3.5rem] border-[10px] border-[#B0BEC5] shadow-[0_0_100px_rgba(37,99,235,0.1)] overflow-hidden flex items-center justify-center">
+          <div className="absolute inset-0 bg-[#E3F2FD] rounded-[3.5rem] border-[10px] border-[#B0BEC5] shadow-[0_0_100px_rgba(37,99,235,0.1)] overflow-hidden flex items-center justify-center relative">
             {deviceImage ? (
-              <img 
+              <Image 
                 src={deviceImage} 
                 alt="Redmi 12 5G" 
-                className="w-full h-full object-cover"
-                data-ai-hint="smartphone blue"
+                fill
+                className="object-cover"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <div className="flex flex-col items-center justify-center text-blue-500/20 p-12 text-center">

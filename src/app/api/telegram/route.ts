@@ -21,10 +21,27 @@ export async function POST(req: Request) {
     const html = await res.text();
     
     const $ = cheerio.load(html);
-    const posts: string[] = [];
+    const posts: any[] = [];
     
-    $('.tgme_widget_message_text').each((i, el) => {
-      posts.push($(el).text());
+    $('.tgme_widget_message').each((i, el) => {
+      const text = $(el).find('.tgme_widget_message_text').text();
+      const buttons: { text: string; url: string }[] = [];
+      
+      $(el).find('.tgme_widget_message_inline_button').each((j, btn) => {
+        const btnText = $(btn).text();
+        const btnUrl = $(btn).attr('href');
+        if (btnUrl) {
+          buttons.push({ text: btnText, url: btnUrl });
+        }
+      });
+
+      if (text || buttons.length > 0) {
+        posts.push({
+          text,
+          buttons,
+          date: $(el).find('time').attr('datetime')
+        });
+      }
     });
 
     return NextResponse.json({ posts });

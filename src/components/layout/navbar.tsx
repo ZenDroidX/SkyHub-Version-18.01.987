@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { 
   Cpu, 
@@ -20,7 +20,7 @@ import {
   ChevronRight,
   Terminal,
   Loader2,
-  Heart,
+  Cat,
   Copy,
   Check,
   Send,
@@ -51,7 +51,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion, AnimatePresence } from 'framer-motion';
-import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
+import { DEFAULT_DONATION_CONFIG, SiteSettings } from '@/lib/store';
 import { AuthModal } from '@/components/auth/auth-modal';
 
 const HUB_OWNERS = ['meinkxun@gmail.com', 'skyhubowner@gmail.com'];
@@ -69,10 +69,10 @@ export function Navbar() {
   const { data: profile } = useDoc(userProfileRef);
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'donation', 'settings') : null, [db]);
-  const { data: settings } = useDoc(settingsRef);
+  const { data: settings } = useDoc<SiteSettings>(settingsRef);
 
   const globalSettingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'global') : null, [db]);
-  const { data: globalSettings } = useDoc(globalSettingsRef);
+  const { data: globalSettings } = useDoc<SiteSettings>(globalSettingsRef);
 
   const upiId = settings?.upiId || DEFAULT_DONATION_CONFIG.upiId;
   const upiAmount = settings?.upiAmount || DEFAULT_DONATION_CONFIG.upiAmount;
@@ -141,7 +141,6 @@ export function Navbar() {
     { name: 'ROMs', href: '/#roms', icon: <Cpu className="w-3.5 h-3.5" /> },
     { name: 'Modules', href: '/#modules', icon: <Smartphone className="w-3.5 h-3.5" /> },
     { name: 'Mod APKs', href: '/#rooted-apks', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
-    { name: 'Wallpapers', href: '/#wallpapers', icon: <ImageIcon className="w-3.5 h-3.5" /> },
     { name: 'Tutorials', href: '/#guides', icon: <BookOpen className="w-3.5 h-3.5" /> },
   ];
 
@@ -159,7 +158,7 @@ export function Navbar() {
       <nav className="hidden md:flex items-center gap-1.5 glass-pill px-2 py-1.5 rounded-full pointer-events-auto border border-border shadow-2xl">
         <Link href="/" className="ml-4 mr-2 flex items-center">
           {logoUrl ? (
-            <img src={logoUrl} className="h-10 w-auto object-contain py-1" alt="Logo" />
+            <Image src={logoUrl} width={100} height={40} className="h-10 w-auto object-contain py-1" alt="Logo" referrerPolicy="no-referrer" />
           ) : (
             <span className="font-black text-sm uppercase tracking-tighter">{brandName}</span>
           )}
@@ -221,7 +220,7 @@ export function Navbar() {
             onClick={handleSupportClick}
             className="w-9 h-9 rounded-full hover:bg-muted text-red-500 flex items-center justify-center"
           >
-            <Heart className="w-4 h-4 fill-current" />
+            <Cat className="w-4 h-4" />
           </Button>
         </motion.div>
 
@@ -271,7 +270,7 @@ export function Navbar() {
         <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
           <Link href="/" className="flex items-center">
             {logoUrl ? (
-              <img src={logoUrl} className="h-10 w-auto object-contain py-1" alt="Logo" />
+              <Image src={logoUrl} width={100} height={40} className="h-10 w-auto object-contain py-1" alt="Logo" referrerPolicy="no-referrer" />
             ) : (
               <span className="font-black text-xl uppercase tracking-tighter">{brandName}</span>
             )}
@@ -296,7 +295,7 @@ export function Navbar() {
               onClick={handleSupportClick}
               className="w-10 h-10 rounded-full text-red-500 flex items-center justify-center hover:bg-red-500/10 transition-all"
             >
-              <Heart className="w-5 h-5 fill-current" />
+              <Cat className="w-5 h-5" />
             </Button>
           </motion.div>
 
@@ -386,7 +385,7 @@ export function Navbar() {
                     variant="outline"
                     className="w-full h-12 rounded-2xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all text-[9px]"
                   >
-                    <Heart className="w-4 h-4 fill-current" />
+                    <Cat className="w-4 h-4" />
                     Support Hub
                   </Button>
                 </motion.div>
@@ -480,7 +479,7 @@ export function Navbar() {
           </DialogHeader>
           
           <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            <img src={qrLink} alt="Payment QR" className="w-full h-full object-contain" />
+            <Image src={qrLink} alt="Payment QR" fill className="object-contain" referrerPolicy="no-referrer" />
           </div>
 
           <div className="w-full space-y-4">

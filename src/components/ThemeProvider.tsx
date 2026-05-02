@@ -131,7 +131,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
     return () => observer.disconnect();
-  }, [globalData, profile?.theme]);
+  }, [globalData, profile]);
 
   return <>{children}</>;
 }

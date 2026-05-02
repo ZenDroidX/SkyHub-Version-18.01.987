@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Smartphone, Settings, Cpu, Zap, Shield, Users, Heart, QrCode, Copy, Check, Send, MessageSquare, Sparkles } from 'lucide-react';
+import { Smartphone, Settings, Cpu, Zap, Shield, Users, Cat, QrCode, Copy, Check, Send, MessageSquare, Sparkles } from 'lucide-react';
+import Image from 'next/image';
 import { 
   Dialog, 
   DialogContent, 
@@ -11,18 +12,19 @@ import {
 } from '@/components/ui/dialog';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
+import { DEFAULT_DONATION_CONFIG, SiteSettings } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { resolveImageUrl } from '@/lib/image-resolver';
 
 export function Hero() {
   const db = useFirestore();
   const settingsRef = useMemoFirebase(() => doc(db, 'donation', 'settings'), [db]);
-  const { data: settings } = useDoc(settingsRef);
+  const { data: settings } = useDoc<SiteSettings>(settingsRef);
 
   const globalSettingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
-  const { data: globalSettings } = useDoc(globalSettingsRef);
+  const { data: globalSettings } = useDoc<SiteSettings>(globalSettingsRef);
 
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -133,8 +135,8 @@ export function Hero() {
             
             <div className="relative z-10 flex items-center gap-3">
               {telegramLogo ? (
-                <div className="w-6 h-6 rounded-full overflow-hidden bg-background/50 border border-border/20 flex items-center justify-center group-hover:border-blue-500/50 transition-all">
-                  <img src={telegramLogo} className="w-full h-full object-contain" alt="Logo" />
+                <div className="relative w-6 h-6 rounded-full overflow-hidden bg-background/50 border border-border/20 flex items-center justify-center group-hover:border-blue-500/50 transition-all">
+                  <Image src={resolveImageUrl(telegramLogo)} fill className="object-contain" alt="Logo" referrerPolicy="no-referrer" />
                 </div>
               ) : <Send className="w-4 h-4" />}
               <span>Official Channel</span>
@@ -190,7 +192,7 @@ export function Hero() {
               variant="outline" 
               className="h-16 px-10 rounded-2xl border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 font-black text-[11px] uppercase tracking-[0.2em] gap-4 transition-all duration-300 w-full sm:w-auto"
             >
-              <Heart className="w-4 h-4 fill-current" />
+              <Cat className="w-4 h-4" />
               Support
             </Button>
           </motion.div>
@@ -231,7 +233,7 @@ export function Hero() {
           </DialogHeader>
           
           <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            {qrLink && <img src={qrLink} alt="Payment QR" className="w-full h-full object-contain" />}
+            {qrLink && <Image src={resolveImageUrl(qrLink)} alt="Payment QR" fill className="object-contain" referrerPolicy="no-referrer" />}
           </div>
 
           <div className="w-full space-y-4">

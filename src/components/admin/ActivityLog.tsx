@@ -267,7 +267,7 @@ export function ActivityLog() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="font-mono text-[11px] p-6 space-y-2 max-h-[400px] overflow-y-auto bg-black text-emerald-500/90 selection:bg-primary selection:text-black">
-            {activities.slice(0, 20).map((act: any, idx: number) => (
+            {(activities || []).slice(0, 20).map((act: any, idx: number) => (
               <div key={act.id} className="flex gap-4 group hover:bg-primary/5 p-1 rounded transition-colors">
                 <span className="text-muted-foreground/30 select-none">[{idx.toString().padStart(2, '0')}]</span>
                 <span className="text-blue-400">[{act.timestamp ? format(act.timestamp.toDate(), 'HH:mm:ss') : '00:00:00'}]</span>

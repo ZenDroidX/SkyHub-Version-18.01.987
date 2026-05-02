@@ -1,18 +1,6 @@
 'use client';
 import { GoogleGenAI, Type } from "@google/genai";
 
-const getApiKey = () => {
-    const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
-    if (!key || key.includes('placeholder')) {
-        console.warn("Neural Pulse Warning: No valid NEXT_PUBLIC_GEMINI_API_KEY found in frontend environment.");
-    }
-    return key;
-};
-
-export const ai = new GoogleGenAI({ 
-    apiKey: getApiKey() 
-});
-
 export const EXTRACT_RESOURCES_SCHEMA = {
     type: Type.OBJECT,
     properties: {
@@ -38,18 +26,29 @@ export const EXTRACT_RESOURCES_SCHEMA = {
     }
 };
 
-export async function extractFromContent(content: string, url: string = 'local-input') {
+export async function extractFromContent(content: string, url: string = 'local-input', customApiKey?: string) {
+    const envKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const keyToUse = (customApiKey && customApiKey.trim().length > 10) 
+        ? customApiKey.trim() 
+        : (envKey && !envKey.includes('placeholder') && envKey.length > 10 ? envKey.trim() : '');
+    
+    if (!keyToUse) {
+        throw new Error("NEURAL_AUTH_REQUIRED: No Gemini API key detected. Please set your API Key in [Super Admin Panel > AI Settings] before performing extraction.");
+    }
+
+    const aiInstance = new GoogleGenAI({ apiKey: keyToUse });
+    
     const prompt = `You are an intelligent data extraction AI.
 
 Your task is to parse the provided content (HTML, Text, or Telegram) and extract structured data for all Custom ROMs/Modules.
 
 FIELDS:
-1. name (string) → Title of the ROM
-2. version (string) → Version mentioned beside title
+1. name (string) - Title of the ROM
+2. version (string) - Version mentioned beside title
 3. androidVersion (string)
 4. size (string)
 5. updated (string)
-6. description (string) → Features, Smoothness, UI type, etc.
+6. description (string) - Features, Smoothness, UI type, etc.
 7. downloadUrl (URL)
 8. imageUrl (URL)
 
@@ -69,18 +68,18 @@ Content:
 ${content.substring(0, 35000)}`;
 
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+        const response = await aiInstance.models.generateContent({
+            model: "gemini-3-flash-preview",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
-                responseSchema: EXTRACT_RESOURCES_SCHEMA,
-                // Increase output potential but prompt for brevity
-                temperature: 0.2
+                responseSchema: EXTRACT_RESOURCES_SCHEMA as any,
+                temperature: 0.1
             }
         });
-
-        let text = response.text?.trim() || "";
+        
+        const text = response.text?.trim() || "";
+        
         if (!text) throw new Error("Empty response from AI");
         
         // Handle potential truncation manually if JSON is invalid

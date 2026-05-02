@@ -3,13 +3,16 @@
 
 import { Navbar } from '@/components/layout/navbar';
 import { Hero } from '@/components/sections/hero';
-import { ROMGrid, ModuleGrid, GuideGrid, RequestROM, RootGrid, ModApkGrid, CustomGrid, LiveWallpaperGrid } from '@/components/sections/content-grid';
+import { DonorShowcase } from '@/components/sections/DonorShowcase';
+import { ROMGrid, ModuleGrid, GuideGrid, RequestROM, RootGrid, ModApkGrid, CustomGrid } from '@/components/sections/content-grid';
 import { Wallpapers } from '@/components/sections/wallpapers';
 import { Slideshow } from '@/components/sections/slideshow';
 import { Footer } from '@/components/sections/footer';
+import { PaymentFloatingButton } from '@/components/sections/PaymentFloatingButton';
 import { useCollection, useMemoFirebase, useFirestore, useDoc } from '@/firebase';
 import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
+import { SiteSettings } from '@/lib/store';
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -27,7 +30,6 @@ export default function Home() {
   const modulesQuery = useMemoFirebase(() => query(collection(db, 'modules'), orderBy('createdAt', 'desc')), [db]);
   const apksQuery = useMemoFirebase(() => query(collection(db, 'mod-apks'), orderBy('createdAt', 'desc')), [db]);
   const wallpapersQuery = useMemoFirebase(() => query(collection(db, 'wallpapers'), orderBy('createdAt', 'desc')), [db]);
-  const liveWallpapersQuery = useMemoFirebase(() => query(collection(db, 'live-wallpapers'), orderBy('createdAt', 'desc')), [db]);
   const guidesQuery = useMemoFirebase(() => query(collection(db, 'tutorials'), orderBy('createdAt', 'desc')), [db]);
   const rootPackagesQuery = useMemoFirebase(() => query(collection(db, 'root-packages'), orderBy('createdAt', 'desc')), [db]);
   const navLinksQuery = useMemoFirebase(() => query(collection(db, 'navigation-links'), orderBy('order', 'asc')), [db]);
@@ -38,35 +40,34 @@ export default function Home() {
   const { data: modules, isLoading: modulesLoading } = useCollection(modulesQuery);
   const { data: apks, isLoading: apksLoading } = useCollection(apksQuery);
   const { data: wallpapers, isLoading: wallpapersLoading } = useCollection(wallpapersQuery);
-  const { data: liveWallpapers, isLoading: liveLoading } = useCollection(liveWallpapersQuery);
   const { data: guides, isLoading: guidesLoading } = useCollection(guidesQuery);
   const { data: rootPackages, isLoading: rootLoading } = useCollection(rootPackagesQuery);
   const { data: customLinks } = useCollection(navLinksQuery);
   const { data: customResources, isLoading: customLoading } = useCollection(customResourcesQuery);
-  const { data: globalSettings } = useDoc(globalSettingsRef);
+  const { data: globalSettings } = useDoc<SiteSettings>(globalSettingsRef);
 
   const defaultLayout = [
-    { id: 'slideshow', order: 0, visible: true },
-    { id: 'hero', order: 1, visible: true },
-    { id: 'roms', order: 2, visible: true, columns: 3, gap: 4 },
-    { id: 'modules', order: 3, visible: true, columns: 3, gap: 4 },
-    { id: 'apks', order: 4, visible: true, columns: 3, gap: 4 },
-    { id: 'root', order: 5, visible: true, columns: 3, gap: 4 },
-    { id: 'guides', order: 6, visible: true, columns: 3, gap: 4 },
-    { id: 'liveWallpapers', order: 7, visible: true, columns: 3, gap: 4 },
-    { id: 'wallpapers', order: 8, visible: true, columns: 3, gap: 4 },
+    { id: 'slideshow', visible: true },
+    { id: 'hero', visible: true },
+    { id: 'roms', visible: true },
+    { id: 'modules', visible: true },
+    { id: 'apks', visible: true },
+    { id: 'root', visible: true },
+    { id: 'guides', visible: true },
+    { id: 'wallpapers', visible: true },
+    { id: 'donors', visible: true },
   ];
 
   // Fallback to default layout if globalSettings or layoutConfig is missing
-  const layout = globalSettings?.layoutConfig || defaultLayout;
+  const customLayout = globalSettings?.layoutConfig || defaultLayout;
   
-  // Ensure all default sections are present
-  const mergedLayout = defaultLayout.map(defaultSection => {
-    const customSection = layout.find((s: any) => s.id === defaultSection.id);
-    return customSection || defaultSection;
+  // Ensure all default sections are present in customLayout at least once
+  const mergedLayout = [...customLayout];
+  defaultLayout.forEach(def => {
+    if (!mergedLayout.find(m => m.id === def.id)) {
+      mergedLayout.push(def);
+    }
   });
-  
-  const sortedLayout = [...mergedLayout].sort((a, b) => a.order - b.order);
 
   const contentSections = customLinks?.filter(link => link.type === 'section') || [];
 
@@ -76,6 +77,7 @@ export default function Home() {
     switch (section.id) {
       case 'slideshow': return <Slideshow slideshowImages={globalSettings?.slideshowImages || []} rounding={globalSettings?.slideshowRounding} />;
       case 'hero': return <Hero />;
+      case 'donors': return <DonorShowcase />;
       case 'roms': return <ROMGrid roms={roms || []} isLoading={romsLoading} />;
       case 'modules': return <ModuleGrid modules={modules || []} isLoading={modulesLoading} />;
       case 'apks': return <ModApkGrid apks={apks || []} isLoading={apksLoading} />;
@@ -88,7 +90,6 @@ export default function Home() {
           </div>
         </section>
       );
-      case 'liveWallpapers': return <LiveWallpaperGrid wallpapers={liveWallpapers || []} isLoading={liveLoading} />;
       case 'wallpapers': return <Wallpapers wallpapers={wallpapers || []} isLoading={wallpapersLoading} />;
       default: return null;
     }
@@ -101,7 +102,7 @@ export default function Home() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}>
         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}>
           <div className="space-y-16 pb-32">
-            {sortedLayout.map(section => (
+            {mergedLayout.map(section => (
               <motion.div key={section.id} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
                 {renderSection(section)}
               </motion.div>
@@ -120,6 +121,7 @@ export default function Home() {
       </motion.div>
 
       <Footer />
+      <PaymentFloatingButton settings={globalSettings || undefined} />
     </main>
   );
 }

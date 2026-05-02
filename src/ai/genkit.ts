@@ -17,18 +17,23 @@ const getApiKey = () => {
     return privateApi.trim();
   }
 
+  // Fallback for cloud environment if no key is provided yet
   return undefined;
 };
 
 const apiKey = getApiKey();
 
-if (!apiKey) {
-  console.error("AI CONFIG ERROR: No valid Gemini API key found in environment variables. Extraction will fail.");
+if (!apiKey && typeof window === 'undefined') {
+  console.warn("AI CONFIG WARNING: No valid Gemini API key found in server environment. Extraction flows may fail.");
 }
+
+// In the browser context (e.g. when Action stubs are loaded), we provide a dummy key
+// to satisfy the constructor if no public key is found. The real calls happen on the server.
+const genkitKey = apiKey || (typeof window !== 'undefined' ? 'BROWSER_CLIENT_STUB' : '');
 
 export const ai = genkit({
   plugins: [
-    googleAI(apiKey ? { apiKey } : {})
+    googleAI(genkitKey ? { apiKey: genkitKey } : {})
   ],
   model: 'googleai/gemini-1.5-flash',
 });

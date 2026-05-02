@@ -84,6 +84,50 @@ export interface SiteSettings {
   loading?: LoadingConfig;
   stormFX?: StormConfig;
   audio?: AudioConfig;
+  paymentLink?: string;
+  brandName?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  slideshowRounding?: number;
+  layoutConfig?: any[];
+  dashboardSidebarOrder?: string[];
+  slideshowImages?: any[];
+  supportLinks?: {
+    paymentLink?: string;
+    qrLink?: string;
+  };
+  socialLinks?: {
+    telegramChannel?: string;
+    discussion?: string;
+  };
+  romRequestFormUrl?: string;
+  donorShowcase?: {
+    enabled?: boolean;
+    speed?: number;
+    pauseOnHover?: boolean;
+    style?: 'glassmorphism' | 'neon' | 'classic' | 'minimal';
+    showParticles?: boolean;
+  };
+  geminiApiKey?: string;
+  siteAnimation?: 'none' | 'fade' | 'slide' | 'bounce' | 'zoom';
+  seo?: {
+    title?: string;
+    description?: string;
+    keywords?: string;
+    ogImage?: string;
+  };
+}
+
+export interface Donor {
+  id: string;
+  name: string;
+  username?: string;
+  message?: string;
+  amount?: string;
+  avatarUrl?: string;
+  visible: boolean;
+  priority: number;
+  createdAt: any;
 }
 
 export type DonationConfig = SiteSettings;
@@ -124,5 +168,26 @@ export const DEFAULT_DONATION_CONFIG: SiteSettings = {
     volume: 0.3,
     enabled: false,
     title: 'Sky Hub Ambient'
+  },
+  paymentLink: '',
+  brandName: 'SKY HUB',
+  heroTitle: 'OPTIMIZED FOR SNAPDRAGON',
+  heroSubtitle: 'Next-gen performance protocols for the 4 Gen 2 ecosystem.',
+  slideshowRounding: 2,
+  supportLinks: {
+    paymentLink: '',
+    qrLink: 'https://i.postimg.cc/pVCW339q/IMG-20260205-214503-250.jpg'
+  },
+  socialLinks: {
+    telegramChannel: 'https://t.me/sky_hub_official',
+    discussion: 'https://t.me/sky_hub_chat'
+  },
+  romRequestFormUrl: 'https://formspree.io/f/xgvzvelv',
+  donorShowcase: {
+    enabled: true,
+    speed: 30,
+    pauseOnHover: true,
+    style: 'glassmorphism',
+    showParticles: true
   }
 };

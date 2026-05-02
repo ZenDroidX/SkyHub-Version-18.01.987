@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
@@ -89,14 +90,18 @@ import {
   useMemoFirebase, 
   useUser, 
   useDoc, 
+  useAuth,
   deleteDocumentNonBlocking,
   updateDocumentNonBlocking,
   useStorage
 } from '@/firebase';
-import { collection, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '@/lib/utils';
+import { MediaPreview } from '@/components/MediaPreview';
 import { logActivity } from '@/lib/activity-logger';
+import { extractRoms } from '@/ai/flows/extract-roms-flow';
 import { toast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { DEFAULT_DONATION_CONFIG, StormConfig } from '@/lib/store';
@@ -106,6 +111,23 @@ import { MessageHistory } from '@/components/admin/MessageHistory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { extractFromContent } from '@/ai/client-ai';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import SuperAdminPanel from '@/components/admin/SuperAdminPanel';
 
 const HUB_OWNERS = ['meinkxun@gmail.com', 'skyhubowner@gmail.com'];
@@ -156,6 +178,82 @@ function StormEnvironmentFX({ config }: { config?: StormConfig }) {
   );
 }
 
+function SortableSidebarItem({ 
+  item, 
+  activeTab, 
+  setActiveTab, 
+  isSuperAdmin 
+}: { 
+  item: any, 
+  activeTab: string, 
+  setActiveTab: (id: string) => void,
+  isSuperAdmin: boolean
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      id={`sidebar-item-${item.id}`}
+      style={style}
+      className={cn(
+        "relative group flex shrink-0 snap-center snap-always",
+        isDragging && "opacity-50"
+      )}
+    >
+      <motion.button
+        whileHover={!isDragging ? { scale: 1.02, backgroundColor: "rgba(var(--primary), 0.1)" } : {}}
+        whileTap={!isDragging ? { scale: 0.98 } : {}}
+        onClick={() => setActiveTab(item.id)}
+        className={cn(
+          "flex items-center gap-3 px-5 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border text-left min-w-max lg:w-full snap-center",
+          activeTab === item.id 
+            ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+            : "bg-transparent text-muted-foreground border-transparent hover:border-border/50 hover:text-foreground"
+        )}
+      >
+        <div className={cn(
+          "w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0",
+          activeTab === item.id ? "bg-white/20" : "bg-muted"
+        )}>
+          {item.icon}
+        </div>
+        <span className="flex-1 uppercase tracking-widest whitespace-nowrap">{item.label}</span>
+        
+        {activeTab === item.id && (
+          <motion.div 
+            layoutId="activeTabIndicator"
+            className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_#fff] animate-pulse shrink-0" 
+          />
+        )}
+      </motion.button>
+      
+      {isSuperAdmin && (
+        <div 
+          {...attributes}
+          {...listeners}
+          className="absolute -top-2 -right-2 w-8 h-8 bg-background border border-border rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing z-50 touch-none"
+        >
+           <Menu className="w-3 h-3 rotate-90 text-primary" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab');
@@ -185,6 +283,26 @@ export default function DashboardPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [sidebarOrder, setSidebarOrder] = useState<string[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 20, // Increased distance to avoid accidental drag while selecting/scrolling
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  useEffect(() => {
+    // Scroll active tab into view on mobile slider
+    const activeElement = document.getElementById(`sidebar-item-${activeTab}`);
+    if (activeElement) {
+      activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [activeTab]);
 
   const [editUsername, setEditUsername] = useState('');
   const [editProfileImage, setEditProfileImage] = useState('');
@@ -204,8 +322,11 @@ export default function DashboardPage() {
   const [romRequestFormUrl, setRomRequestFormUrl] = useState('');
   const [slideshowRounding, setSlideshowRounding] = useState(2); // 2rem default
   const [isSavingLayout, setIsSavingLayout] = useState(false);
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
 
   const { user: currentUser } = useUser();
+  const auth = useAuth();
   const db = useFirestore();
   const storage = useStorage();
   const router = useRouter();
@@ -239,6 +360,9 @@ export default function DashboardPage() {
       setFaviconUrl(globalSettings.faviconUrl || '');
       setRomRequestFormUrl(globalSettings.romRequestFormUrl || '');
       setSlideshowRounding(globalSettings.slideshowRounding ?? 2);
+      if (globalSettings.dashboardSidebarOrder) {
+        setSidebarOrder(globalSettings.dashboardSidebarOrder);
+      }
     }
   }, [globalSettings]);
 
@@ -255,7 +379,7 @@ export default function DashboardPage() {
     }
   }, [isBulkDialogOpen]);
 
-  const menuItems = [
+  const baseMenuItems = [
     { id: 'profile', label: 'My Profile', icon: <UserCircle className="w-4 h-4" />, permission: 'all' },
     { id: 'themes', label: 'Themes', icon: <Palette className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'roms', label: 'Custom ROMs', icon: <Package className="w-4 h-4" />, permission: 'canManageRoms' },
@@ -264,8 +388,6 @@ export default function DashboardPage() {
     { id: 'guides', label: 'Protocols', icon: <FileText className="w-4 h-4" />, permission: 'canManageGuides' },
     { id: 'branding', label: 'Logo Mgmt', icon: <LucideImage className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'root', label: 'Root Protocol', icon: <Zap className="w-4 h-4" />, permission: 'adminOnly' },
-    { id: 'live-wallpapers', label: 'Live Visuals', icon: <Video className="w-4 h-4" />, permission: 'canManageWallpapers' },
-    { id: 'wallpapers', label: 'Wallpaper', icon: <ImageIcon className="w-4 h-4" />, permission: 'canManageWallpapers' },
     { id: 'visuals', label: 'Visual Protocols', icon: <Monitor className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'ai-extract', label: 'AI Terminal', icon: <Bot className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'telegram-sync', label: 'Telegram Sync', icon: <CloudLightning className="w-4 h-4" />, permission: 'adminOnly' },
@@ -273,7 +395,16 @@ export default function DashboardPage() {
     { id: 'users', label: 'Identity Mgmt', icon: <Users className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'payments', label: 'Payment Hub', icon: <CreditCard className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'maintenance', label: 'Maintenance Hub', icon: <Zap className="w-4 h-4" />, permission: 'superAdminOnly' }
-  ].filter(item => {
+  ];
+
+  const menuItems = [...baseMenuItems].sort((a, b) => {
+    const aIndex = sidebarOrder.indexOf(a.id);
+    const bIndex = sidebarOrder.indexOf(b.id);
+    if (aIndex === -1 && bIndex === -1) return 0;
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  }).filter(item => {
     if (item.permission === 'all') return true;
     if (item.permission === 'superAdminOnly') return isSuperAdmin;
     if (isSuperAdmin || profile?.role === 'admin') return true;
@@ -283,6 +414,29 @@ export default function DashboardPage() {
     }
     return false;
   });
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !isSuperAdmin) return;
+
+    const oldIndex = menuItems.findIndex(item => item.id === active.id);
+    const newIndex = menuItems.findIndex(item => item.id === over.id);
+
+    const newMenuItems = arrayMove(menuItems, oldIndex, newIndex);
+    const newOrder = newMenuItems.map(item => item.id);
+    
+    // Update local state first for immediate feedback
+    setSidebarOrder(newOrder);
+
+    try {
+      await updateDoc(doc(db, 'settings', 'global'), {
+        dashboardSidebarOrder: newOrder
+      });
+      toast({ title: "Site Structure Updated", description: "Sidebar hierarchy synchronized." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Sync Failed" });
+    }
+  };
 
   useEffect(() => {
     if (menuItems.length > 0 && !activeTab) {
@@ -295,7 +449,6 @@ export default function DashboardPage() {
   const apksQuery = useMemoFirebase(() => query(collection(db, 'mod-apks'), orderBy('createdAt', 'desc')), [db]);
   const usersQuery = useMemoFirebase(() => (isSuperAdmin || isAdminRole) ? query(collection(db, 'users'), orderBy('createdAt', 'desc')) : null, [db, isSuperAdmin, isAdminRole]);
   const wallpapersQuery = useMemoFirebase(() => query(collection(db, 'wallpapers'), orderBy('createdAt', 'desc')), [db]);
-  const liveWallpapersQuery = useMemoFirebase(() => query(collection(db, 'live-wallpapers'), orderBy('createdAt', 'desc')), [db]);
   const guidesQuery = useMemoFirebase(() => query(collection(db, 'tutorials'), orderBy('createdAt', 'desc')), [db]);
   const rootQuery = useMemoFirebase(() => query(collection(db, 'root-packages'), orderBy('createdAt', 'desc')), [db]);
   const auditLogsQuery = useMemoFirebase(() => isSuperAdmin ? query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc')) : null, [db, isSuperAdmin]);
@@ -305,7 +458,6 @@ export default function DashboardPage() {
   const { data: apks } = useCollection(apksQuery);
   const { data: users } = useCollection(usersQuery);
   const { data: wallpapers } = useCollection(wallpapersQuery);
-  const { data: liveWallpapers } = useCollection(liveWallpapersQuery);
   const { data: guides } = useCollection(guidesQuery);
   const { data: rootPackages } = useCollection(rootQuery);
   const { data: auditLogs } = useCollection(auditLogsQuery);
@@ -322,7 +474,9 @@ export default function DashboardPage() {
         developer: profile?.username || 'Admin',
         createdAt: serverTimestamp(),
       });
-      await logActivity(db, currentUser.uid, `Added post to ${collectionName}`);
+      if (currentUser) {
+        await logActivity(db, currentUser.uid, `Added post to ${collectionName}`);
+      }
       toast({ title: "Added to " + collectionName });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Failed to add", description: e.message });
@@ -420,14 +574,14 @@ export default function DashboardPage() {
          }
       }
 
-      const result = await extractFromContent(content || '', bulkUrl || 'pulse-buffer');
+      const result = await extractFromContent(content || '', bulkUrl || 'pulse-buffer', globalSettings?.geminiApiKey);
       const items = result.roms || [];
       setExtractedItems(items);
       setSelectedExtractedIndices(items.map((_: any, i: number) => i));
       
       // Log Activity
-      if (auth.currentUser) {
-        logActivity(db, auth.currentUser.uid, `AI Extraction: Found ${items.length} records from ${bulkUrl || 'uploaded file'}`);
+      if (currentUser) {
+        logActivity(db, currentUser.uid, `AI Extraction: Found ${items.length} records from ${bulkUrl || 'uploaded file'}`);
       }
 
       toast({ title: "Neural Extraction Success", description: `Identified ${items.length} records.` });
@@ -445,7 +599,7 @@ export default function DashboardPage() {
       if (collectionName === 'guides') collectionName = 'tutorials';
       else if (collectionName === 'root') collectionName = 'root-packages';
       
-      const validCollections = ['roms', 'modules', 'mod-apks', 'wallpapers', 'live-wallpapers', 'tutorials', 'root-packages'];
+      const validCollections = ['roms', 'modules', 'mod-apks', 'tutorials', 'root-packages'];
       if (!validCollections.includes(collectionName)) {
         collectionName = 'roms';
       }
@@ -462,8 +616,8 @@ export default function DashboardPage() {
       }
 
       // Log Activity
-      if (auth.currentUser) {
-        logActivity(db, auth.currentUser.uid, `Imported ${items.length} items to ${collectionName} via AI`);
+      if (currentUser) {
+        logActivity(db, currentUser.uid, `Imported ${items.length} items to ${collectionName} via AI`);
       }
 
       setExtractedItems([]);
@@ -488,13 +642,13 @@ export default function DashboardPage() {
       const html = event.target?.result as string;
       console.log("Neural Pulse: Transmitting data packet of size", html.length);
       try {
-        const result = await extractFromContent(html);
+        const result = await extractFromContent(html, 'file-upload', globalSettings?.geminiApiKey);
         console.log("Neural Pulse: AI response received.", result);
         const items = result.roms || [];
         setExtractedItems(items);
         if (items.length > 0) {
           toast({ title: "Neural Extraction Success", description: `Found ${items.length} resources in ${file.name}.` });
-          setSelectedExtractedIndices(items.map((_, i) => i));
+          setSelectedExtractedIndices(items.map((_: any, i: number) => i));
         } else {
           toast({ variant: "destructive", title: "No Data Found", description: "The AI could not identify structured resources. Check if the file contains readable links." });
         }
@@ -531,7 +685,6 @@ export default function DashboardPage() {
     // Determine collection based on active tab
     let collectionName = 'roms';
     if (activeTab === 'wallpapers') collectionName = 'wallpapers';
-    else if (activeTab === 'live-wallpapers') collectionName = 'live-wallpapers';
     else if (activeTab === 'mod-apks') collectionName = 'mod-apks';
     else if (activeTab === 'modules') collectionName = 'modules';
     
@@ -711,7 +864,6 @@ export default function DashboardPage() {
       case 'modules': return modules;
       case 'mod-apks': return apks;
       case 'wallpapers': return wallpapers;
-      case 'live-wallpapers': return liveWallpapers;
       case 'guides': return guides;
       case 'root': return rootPackages;
       case 'history': return [];
@@ -753,34 +905,31 @@ export default function DashboardPage() {
 
       <div className="flex flex-col lg:flex-row gap-10 items-start">
         {/* Navigation Sidebar (Desktop) / Tab Bar (Mobile) */}
-        <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-32 space-y-4 z-40">
-          <div className="flex flex-row overflow-x-auto lg:flex-col gap-2 p-2 bg-card/30 backdrop-blur-xl border border-border rounded-3xl lg:rounded-[2.5rem] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent snap-x snap-mandatory scroll-pl-4">
-            <div className="min-w-[1rem] lg:hidden" /> {/* Left spacer for mobile */}
-            {menuItems.map((item) => (
-              <motion.button
-                key={item.id}
-                whileHover={{ x: 4, backgroundColor: "rgba(var(--primary), 0.1)" }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setActiveTab(item.id)}
-                className={cn(
-                  "flex items-center gap-3 px-5 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border text-left min-w-max lg:w-full snap-start",
-                  activeTab === item.id 
-                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
-                    : "bg-transparent text-muted-foreground border-transparent hover:border-border/50 hover:text-foreground"
-                )}
+        <aside className="w-full lg:w-80 lg:shrink-0 lg:sticky lg:top-32 space-y-4 z-40">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex flex-row overflow-x-auto lg:flex-col gap-4 p-4 bg-card/30 backdrop-blur-xl border border-border rounded-3xl lg:rounded-[2.5rem] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-hide snap-x snap-mandatory scroll-px-10">
+              <div className="hidden lg:block h-2" /> 
+              <SortableContext
+                items={menuItems.map(i => i.id)}
+                strategy={verticalListSortingStrategy}
               >
-                <div className={cn(
-                  "w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0",
-                  activeTab === item.id ? "bg-white/20" : "bg-muted"
-                )}>
-                  {item.icon}
-                </div>
-                <span className="flex-1 uppercase tracking-widest whitespace-nowrap">{item.label}</span>
-                {activeTab === item.id && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_#fff] animate-pulse shrink-0" />}
-              </motion.button>
-            ))}
-            <div className="min-w-[1rem] lg:hidden" /> {/* Right spacer for mobile */}
-          </div>
+                {menuItems.map((item) => (
+                  <SortableSidebarItem
+                    key={item.id}
+                    item={item}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    isSuperAdmin={isSuperAdmin}
+                  />
+                ))}
+              </SortableContext>
+              <div className="min-w-[4rem] lg:hidden" /> {/* Extra spacing for slider end */}
+            </div>
+          </DndContext>
 
           {/* Quick Stats or Info could go here */}
           <div className="hidden lg:block p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10">
@@ -805,7 +954,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <Label className="text-[10px] font-black uppercase tracking-widest">Display Name</Label>
                   <Input 
-                    value={editUsername} 
+                    value={editUsername || ''} 
                     onChange={(e) => setEditUsername(e.target.value)} 
                     className="h-14 rounded-2xl bg-black/40 border-border" 
                     placeholder="Enter your display name"
@@ -814,7 +963,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <Label className="text-[10px] font-black uppercase tracking-widest">Profile Image URL</Label>
                   <Input 
-                    value={editProfileImage} 
+                    value={editProfileImage || ''} 
                     onChange={(e) => setEditProfileImage(e.target.value)} 
                     className="h-14 rounded-2xl bg-black/40 border-border" 
                     placeholder="Enter profile image URL"
@@ -866,9 +1015,11 @@ export default function DashboardPage() {
                         checked={profile?.role === 'super_admin'} 
                         onCheckedChange={async (checked) => {
                           if (!currentUser) return;
-                          await updateDocumentNonBlocking(doc(db, 'users', currentUser.uid), { 
-                            role: checked ? 'super_admin' : 'user' 
-                          });
+                          if (currentUser) {
+                            await updateDocumentNonBlocking(doc(db, 'users', currentUser.uid), { 
+                              role: checked ? 'super_admin' : 'user' 
+                            });
+                          }
                           toast({ title: checked ? "Superuser Mode Activated" : "Standard User Protocol Active" });
                         }} 
                       />
@@ -878,7 +1029,9 @@ export default function DashboardPage() {
 
                 {editProfileImage && (
                   <div className="flex justify-center p-4">
-                    <img src={editProfileImage} alt="Profile Preview" className="w-24 h-24 rounded-full object-cover border-4 border-primary/20" />
+                    <div className="relative w-24 h-24">
+                      <Image src={editProfileImage} alt="Profile Preview" fill className="rounded-full object-cover border-4 border-primary/20" referrerPolicy="no-referrer" />
+                    </div>
                   </div>
                 )}
                 <Button 
@@ -913,7 +1066,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Site Name (Browser Title)</Label>
                     <Input 
-                      value={siteName} 
+                      value={siteName || ''} 
                       onChange={(e) => setSiteName(e.target.value)} 
                       className="h-14 rounded-2xl bg-black/40 border-border" 
                       placeholder="e.g. SkyHub Protocol"
@@ -922,7 +1075,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Brand Name (Navbar)</Label>
                     <Input 
-                      value={brandName} 
+                      value={brandName || ''} 
                       onChange={(e) => setBrandName(e.target.value)} 
                       className="h-14 rounded-2xl bg-black/40 border-border" 
                       placeholder="e.g. SKYHUB"
@@ -931,7 +1084,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Favicon URL</Label>
                     <Input 
-                      value={faviconUrl} 
+                      value={faviconUrl || ''} 
                       onChange={(e) => setFaviconUrl(e.target.value)}
                       className="h-14 rounded-2xl bg-black/40 border-border" 
                       placeholder="Enter favicon URL"
@@ -940,7 +1093,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Hero Title</Label>
                     <Textarea 
-                      value={heroTitle} 
+                      value={heroTitle || ''} 
                       onChange={(e) => setHeroTitle(e.target.value)}
                       className="h-24 rounded-2xl bg-black/40 border-border" 
                       placeholder="Enter hero title (use \n for line breaks)"
@@ -949,7 +1102,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Hero Subtitle</Label>
                     <Textarea 
-                      value={heroSubtitle} 
+                      value={heroSubtitle || ''} 
                       onChange={(e) => setHeroSubtitle(e.target.value)}
                       className="h-32 rounded-2xl bg-black/40 border-border" 
                       placeholder="Enter hero subtitle"
@@ -958,7 +1111,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">ROM Request Form Link</Label>
                     <Input 
-                      value={romRequestFormUrl} 
+                      value={romRequestFormUrl || ''} 
                       onChange={(e) => setRomRequestFormUrl(e.target.value)}
                       className="h-14 rounded-2xl bg-black/40 border-border" 
                       placeholder="e.g. https://formspree.io/f/your_id"
@@ -968,7 +1121,9 @@ export default function DashboardPage() {
                     <div className="space-y-4">
                       <Label className="text-[10px] font-black uppercase tracking-widest">Favicon Preview</Label>
                       <div className="p-6 bg-black/40 rounded-2xl border border-border flex items-center justify-center">
-                        <img src={faviconUrl} className="w-12 h-12 object-contain" alt="Favicon Preview" />
+                        <div className="relative w-12 h-12">
+                          <Image src={faviconUrl} fill className="object-contain" alt="Favicon Preview" referrerPolicy="no-referrer" />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1001,7 +1156,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest">Direction ({gradientDirection}°)</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Direction ({gradientDirection}deg)</Label>
                     <Slider value={[gradientDirection]} min={0} max={360} step={1} onValueChange={(val) => setGradientDirection(val[0])} />
                   </div>
                 </Card>
@@ -1040,7 +1195,9 @@ export default function DashboardPage() {
                       <div className="space-y-4">
                         <Label className="text-[10px] font-black uppercase tracking-widest">Initialization Preview</Label>
                         <div className="p-6 bg-black/40 rounded-2xl border border-border flex items-center justify-center">
-                          <img src={logoPreview} className="max-h-20 object-contain" alt="Preview" />
+                          <div className="relative h-20 w-40">
+                            <Image src={logoPreview} fill className="object-contain" alt="Preview" referrerPolicy="no-referrer" />
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1060,7 +1217,9 @@ export default function DashboardPage() {
                     <Label className="text-[10px] font-black uppercase tracking-widest">Active Identity</Label>
                     <div className="h-48 glass border-white/5 rounded-3xl flex items-center justify-center p-8">
                       {settings?.logoUrl ? (
-                        <img src={settings.logoUrl} className="max-h-full object-contain" alt="Current Logo" />
+                        <div className="relative h-full w-full">
+                          <Image src={settings.logoUrl} fill className="object-contain" alt="Current Logo" referrerPolicy="no-referrer" />
+                        </div>
                       ) : (
                         <p className="text-[10px] font-black uppercase text-muted-foreground italic">Standard Typography Active</p>
                       )}
@@ -1254,7 +1413,7 @@ export default function DashboardPage() {
                           <TabsContent value="telegram" className="mt-6 space-y-4">
                             <Label className="text-[9px] font-black uppercase ml-1">Paste Broadcast Content</Label>
                             <Textarea 
-                              value={bulkTelegramText} 
+                              value={bulkTelegramText || ''} 
                               onChange={(e) => setBulkTelegramText(e.target.value)} 
                               placeholder="PASTE TELEGRAM POST CONTENT..." 
                               className="min-h-[200px] bg-muted rounded-2xl p-6 text-[11px] font-mono border-border"
@@ -1272,7 +1431,7 @@ export default function DashboardPage() {
                           <TabsContent value="url" className="mt-6 space-y-4">
                             <Label className="text-[9px] font-black uppercase ml-1">Remote Endpoint URL</Label>
                             <Input 
-                              value={bulkUrl} 
+                              value={bulkUrl || ''} 
                               onChange={(e) => setBulkUrl(e.target.value)} 
                               placeholder="HTTPS://EXTERNAL-SOURCE.COM/INDEX.HTML" 
                               className="h-14 bg-muted rounded-2xl px-6 font-mono text-[11px]"
@@ -1383,7 +1542,6 @@ export default function DashboardPage() {
                                    <SelectItem value="modules" className="text-[9px] font-black uppercase">Modules</SelectItem>
                                    <SelectItem value="mod-apks" className="text-[9px] font-black uppercase">APKs</SelectItem>
                                    <SelectItem value="wallpapers" className="text-[9px] font-black uppercase">Walls</SelectItem>
-                                   <SelectItem value="live-wallpapers" className="text-[9px] font-black uppercase">Live Walls</SelectItem>
                                 </SelectContent>
                              </Select>
                          </div>
@@ -1508,9 +1666,9 @@ export default function DashboardPage() {
                   <Card key={u.id} className="p-8 rounded-[2.5rem] bg-muted/30 border-border flex flex-col gap-8 hover:bg-muted/50 transition-all shadow-sm">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-[1.5rem] bg-primary/10 flex items-center justify-center overflow-hidden shrink-0 border border-border shadow-inner">
+                        <div className="relative w-16 h-16 rounded-[1.5rem] bg-primary/10 flex items-center justify-center overflow-hidden shrink-0 border border-border shadow-inner">
                           {u.profileImageUrl ? (
-                            <img src={u.profileImageUrl} className="w-full h-full object-cover" alt="Profile" />
+                            <Image src={u.profileImageUrl} fill className="object-cover" alt="Profile" referrerPolicy="no-referrer" />
                           ) : (
                             <UserCircle className="w-8 h-8 text-primary/40" />
                           )}
@@ -1593,7 +1751,7 @@ export default function DashboardPage() {
                     <Input 
                       placeholder="Neural scan..." 
                       className="h-12 w-full md:w-64 bg-muted/50 rounded-2xl pl-12 border-border focus:ring-primary/20 font-black text-[10px] uppercase"
-                      value={searchQuery}
+                      value={searchQuery || ''}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
@@ -1622,7 +1780,7 @@ export default function DashboardPage() {
                       <Card className="p-6 rounded-[2rem] bg-card border-border hover:border-primary/30 transition-all flex flex-col justify-between h-full shadow-lg hover:shadow-primary/5">
                         <div className="flex items-start gap-4 mb-6">
                           <div className="w-16 h-16 rounded-2xl bg-muted overflow-hidden flex items-center justify-center shrink-0 border border-border/10 group-hover:scale-105 transition-transform">
-                            {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <Package className="w-8 h-8 text-muted-foreground" />}
+                            {item.imageUrl ? <MediaPreview src={item.imageUrl} className="w-full h-full object-cover" /> : <Package className="w-8 h-8 text-muted-foreground" />}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h4 className="font-black uppercase text-sm truncate mb-1">{item.name || item.title}</h4>
@@ -1734,11 +1892,18 @@ export default function DashboardPage() {
               )}
 
               <div className="space-y-2">
-                <Label className="text-[9px] font-black uppercase ml-1">Visual Preview URL</Label>
-                <Input name="imageUrl" placeholder="HTTPS Asset Link" className="bg-muted rounded-xl h-12" />
+                <Label className="text-[9px] font-black uppercase ml-1">Thumbnail Image URL</Label>
+                <Input name="imageUrl" placeholder="Static Preview (JPG/PNG)" className="bg-muted rounded-xl h-12" />
               </div>
 
-              {(activeTab === 'roms' || activeTab === 'wallpapers' || activeTab === 'live-wallpapers') && (
+              {activeTab === 'roms' && (
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase ml-1">Looping Preview Video</Label>
+                  <Input name="videoUrl" placeholder="Direct .mp4 Link" className="bg-muted rounded-xl h-12" />
+                </div>
+              )}
+
+              {(activeTab === 'roms') && (
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase ml-1">Category / Tag</Label>
                   <Input name="category" placeholder="E.g. AOSP, Nature, 60fps" className="bg-muted rounded-xl h-12" />
@@ -2008,11 +2173,18 @@ export default function DashboardPage() {
               )}
 
               <div className="space-y-2">
-                <Label className="text-[9px] font-black uppercase ml-1">Visual Preview URL</Label>
-                <Input name="imageUrl" defaultValue={editingItem?.imageUrl} placeholder="HTTPS Asset Link" className="bg-muted rounded-xl h-12" />
+                <Label className="text-[9px] font-black uppercase ml-1">Thumbnail Image URL</Label>
+                <Input name="imageUrl" defaultValue={editingItem?.imageUrl} placeholder="Static Preview (JPG/PNG)" className="bg-muted rounded-xl h-12" />
               </div>
 
-              {(activeTab === 'roms' || activeTab === 'wallpapers' || activeTab === 'live-wallpapers') && (
+              {activeTab === 'roms' && (
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase ml-1">Looping Preview Video</Label>
+                  <Input name="videoUrl" defaultValue={editingItem?.videoUrl} placeholder="Direct .mp4 Link" className="bg-muted rounded-xl h-12" />
+                </div>
+              )}
+
+              {(activeTab === 'roms') && (
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase ml-1">Category / Tag</Label>
                   <Input name="category" defaultValue={editingItem?.category} placeholder="E.g. AOSP, Nature, 60fps" className="bg-muted rounded-xl h-12" />
