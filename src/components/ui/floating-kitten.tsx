@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 export function FloatingKitten() {
   const db = useFirestore();
-  const { data: rawSettings } = useDoc(doc(db, 'settings', 'global'));
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'global') : null, [db]);
+  const { data: rawSettings } = useDoc(settingsRef);
   const settings = (rawSettings as SiteSettings) || null;
   const kittenConfig = settings?.kittenConfig || {
     enabled: true,

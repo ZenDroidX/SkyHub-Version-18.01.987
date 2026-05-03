@@ -159,6 +159,19 @@ function StormEnvironmentFX({ config }: { config?: StormConfig }) {
   );
 }
 
+const defaultLayoutItems = [
+  { id: 'slideshow', order: 0, visible: true, label: "Slideshow" },
+  { id: 'hero', order: 1, visible: true, label: "Hero Banner" },
+  { id: 'donors', order: 1.5, visible: true, label: "Donors Showcase" },
+  { id: 'roms', order: 2, visible: true, label: "ROMs" },
+  { id: 'modules', order: 3, visible: true, label: "Modules" },
+  { id: 'apks', order: 4, visible: true, label: "Mod APKs" },
+  { id: 'root', order: 5, visible: true, label: "Root Protocol" },
+  { id: 'guides', order: 6, visible: true, label: "Guides" },
+  { id: 'liveWallpapers', order: 7, visible: true, label: "Live Wallpapers" },
+  { id: 'wallpapers', order: 8, visible: true, label: "Wallpapers" },
+];
+
 export default function DashboardPage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab');
@@ -198,19 +211,6 @@ export default function DashboardPage() {
   const [gradientColors, setGradientColors] = useState({ color1: '#2563eb', color2: '#1e40af' });
   const [gradientDirection, setGradientDirection] = useState(90);
   const [useGradient, setUseGradient] = useState(false);
-
-  const defaultLayoutItems = [
-    { id: 'slideshow', order: 0, visible: true, label: "Slideshow" },
-    { id: 'hero', order: 1, visible: true, label: "Hero Banner" },
-    { id: 'donors', order: 1.5, visible: true, label: "Donors Showcase" },
-    { id: 'roms', order: 2, visible: true, label: "ROMs" },
-    { id: 'modules', order: 3, visible: true, label: "Modules" },
-    { id: 'apks', order: 4, visible: true, label: "Mod APKs" },
-    { id: 'root', order: 5, visible: true, label: "Root Protocol" },
-    { id: 'guides', order: 6, visible: true, label: "Guides" },
-    { id: 'liveWallpapers', order: 7, visible: true, label: "Live Wallpapers" },
-    { id: 'wallpapers', order: 8, visible: true, label: "Wallpapers" },
-  ];
 
   const [layoutOrder, setLayoutOrder] = useState<any[]>(defaultLayoutItems);
   const [slideshowImages, setSlideshowImages] = useState<string[]>([]);
@@ -299,7 +299,7 @@ export default function DashboardPage() {
     }
   }, [isBulkDialogOpen]);
 
-  const menuItems = [
+  const menuItems = React.useMemo(() => [
     { id: 'profile', label: 'My Profile', icon: <UserCircle className="w-4 h-4" />, permission: 'all' },
     { id: 'themes', label: 'Themes', icon: <Palette className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'layout', label: 'Site Layout', icon: <Settings2 className="w-4 h-4" />, permission: 'superAdminOnly' },
@@ -327,7 +327,7 @@ export default function DashboardPage() {
       return profile?.[item.permission];
     }
     return false;
-  });
+  }), [isSuperAdmin, profile, isDeveloperRole]);
 
   useEffect(() => {
     if (menuItems.length > 0 && !activeTab) {
