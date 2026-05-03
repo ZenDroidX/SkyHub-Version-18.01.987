@@ -7,7 +7,6 @@ import { useEffect, useState, useRef } from 'react';
 import { Heart, User, Quote, Sparkles } from 'lucide-react';
 import { SiteSettings } from '@/lib/store';
 import { cn } from '@/lib/utils';
-import { resolveImageUrl } from '@/lib/image-resolver';
 
 export function DonorShowcase() {
   const db = useFirestore();
@@ -57,7 +56,7 @@ export function DonorShowcase() {
         <div 
           className="flex whitespace-nowrap animate-marquee hover:pause-marquee"
           style={{ 
-            animationDuration: `${Number(showcaseSettings.speed) || 30}s`,
+            animationDuration: `${showcaseSettings.speed}s`,
             animationPlayState: showcaseSettings.pauseOnHover ? undefined : 'running'
           }}
         >
@@ -94,7 +93,7 @@ function DonorCard({ donor, style }: { donor: any, style: string }) {
         <div className="relative">
           <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary/20 group-hover:border-primary transition-colors">
             {donor.avatarUrl ? (
-              <img src={resolveImageUrl(donor.avatarUrl)} alt={donor.name} className="w-full h-full object-cover" />
+              <img src={donor.avatarUrl} alt={donor.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-primary/10 flex items-center justify-center">
                 <User className="w-6 h-6 text-primary" />
@@ -107,16 +106,9 @@ function DonorCard({ donor, style }: { donor: any, style: string }) {
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="font-bold text-white truncate group-hover:text-primary transition-colors">{donor.name}</h4>
-          <div className="flex items-center gap-2 mt-0.5">
-            {donor.username && (
-              <p className="text-xs text-muted-foreground truncate">@{donor.username}</p>
-            )}
-            {donor.amount && (
-              <span className="text-[10px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 uppercase tracking-tighter">
-                {donor.amount}
-              </span>
-            )}
-          </div>
+          {donor.username && (
+            <p className="text-xs text-muted-foreground truncate">@{donor.username}</p>
+          )}
         </div>
       </div>
 

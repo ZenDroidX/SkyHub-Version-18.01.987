@@ -98,7 +98,6 @@ import { collection, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from
 import { signOut } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '@/lib/utils';
-import { MediaPreview } from '@/components/MediaPreview';
 import { logActivity } from '@/lib/activity-logger';
 import { extractRoms } from '@/ai/flows/extract-roms-flow';
 import { toast } from '@/hooks/use-toast';
@@ -109,24 +108,7 @@ import { LoadingScreen } from '@/components/ui/loading-screen';
 import { MessageHistory } from '@/components/admin/MessageHistory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { extractFromContent } from '@/ai/client-ai';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import SuperAdminPanel from '@/components/admin/SuperAdminPanel';
 
 const HUB_OWNERS = ['meinkxun@gmail.com', 'skyhubowner@gmail.com'];
@@ -177,82 +159,6 @@ function StormEnvironmentFX({ config }: { config?: StormConfig }) {
   );
 }
 
-function SortableSidebarItem({ 
-  item, 
-  activeTab, 
-  setActiveTab, 
-  isSuperAdmin 
-}: { 
-  item: any, 
-  activeTab: string, 
-  setActiveTab: (id: string) => void,
-  isSuperAdmin: boolean
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: item.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : undefined,
-  };
-
-  return (
-    <div 
-      ref={setNodeRef} 
-      id={`sidebar-item-${item.id}`}
-      style={style}
-      className={cn(
-        "relative group flex shrink-0 snap-center snap-always",
-        isDragging && "opacity-50"
-      )}
-    >
-      <motion.button
-        whileHover={!isDragging ? { scale: 1.02, backgroundColor: "rgba(var(--primary), 0.1)" } : {}}
-        whileTap={!isDragging ? { scale: 0.98 } : {}}
-        onClick={() => setActiveTab(item.id)}
-        className={cn(
-          "flex items-center gap-3 px-5 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border text-left min-w-max lg:w-full snap-center",
-          activeTab === item.id 
-            ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
-            : "bg-transparent text-muted-foreground border-transparent hover:border-border/50 hover:text-foreground"
-        )}
-      >
-        <div className={cn(
-          "w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0",
-          activeTab === item.id ? "bg-white/20" : "bg-muted"
-        )}>
-          {item.icon}
-        </div>
-        <span className="flex-1 uppercase tracking-widest whitespace-nowrap">{item.label}</span>
-        
-        {activeTab === item.id && (
-          <motion.div 
-            layoutId="activeTabIndicator"
-            className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_#fff] animate-pulse shrink-0" 
-          />
-        )}
-      </motion.button>
-      
-      {isSuperAdmin && (
-        <div 
-          {...attributes}
-          {...listeners}
-          className="absolute -top-2 -right-2 w-8 h-8 bg-background border border-border rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing z-50 touch-none"
-        >
-           <Menu className="w-3 h-3 rotate-90 text-primary" />
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function DashboardPage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab');
@@ -282,26 +188,6 @@ export default function DashboardPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  const [sidebarOrder, setSidebarOrder] = useState<string[]>([]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 20, // Increased distance to avoid accidental drag while selecting/scrolling
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  useEffect(() => {
-    // Scroll active tab into view on mobile slider
-    const activeElement = document.getElementById(`sidebar-item-${activeTab}`);
-    if (activeElement) {
-      activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  }, [activeTab]);
 
   const [editUsername, setEditUsername] = useState('');
   const [editProfileImage, setEditProfileImage] = useState('');
@@ -313,11 +199,34 @@ export default function DashboardPage() {
   const [gradientDirection, setGradientDirection] = useState(90);
   const [useGradient, setUseGradient] = useState(false);
 
+  const defaultLayoutItems = [
+    { id: 'slideshow', order: 0, visible: true, label: "Slideshow" },
+    { id: 'hero', order: 1, visible: true, label: "Hero Banner" },
+    { id: 'donors', order: 1.5, visible: true, label: "Donors Showcase" },
+    { id: 'roms', order: 2, visible: true, label: "ROMs" },
+    { id: 'modules', order: 3, visible: true, label: "Modules" },
+    { id: 'apks', order: 4, visible: true, label: "Mod APKs" },
+    { id: 'root', order: 5, visible: true, label: "Root Protocol" },
+    { id: 'guides', order: 6, visible: true, label: "Guides" },
+    { id: 'liveWallpapers', order: 7, visible: true, label: "Live Wallpapers" },
+    { id: 'wallpapers', order: 8, visible: true, label: "Wallpapers" },
+  ];
+
+  const [layoutOrder, setLayoutOrder] = useState<any[]>(defaultLayoutItems);
+  const [slideshowImages, setSlideshowImages] = useState<string[]>([]);
+  const [newSlideshowUrl, setNewSlideshowUrl] = useState('');
+
   const [siteName, setSiteName] = useState('');
   const [brandName, setBrandName] = useState('');
   const [heroTitle, setHeroTitle] = useState('');
   const [heroSubtitle, setHeroSubtitle] = useState('');
   const [faviconUrl, setFaviconUrl] = useState('');
+  const [kittenConfig, setKittenConfig] = useState({
+    enabled: false,
+    imageUrl: 'https://media.giphy.com/media/VbnUQpnihPSIgIXuZv/giphy.gif',
+    speed: 2,
+    size: 100
+  });
   const [romRequestFormUrl, setRomRequestFormUrl] = useState('');
   const [slideshowRounding, setSlideshowRounding] = useState(2); // 2rem default
   const [isSavingLayout, setIsSavingLayout] = useState(false);
@@ -359,8 +268,20 @@ export default function DashboardPage() {
       setFaviconUrl(globalSettings.faviconUrl || '');
       setRomRequestFormUrl(globalSettings.romRequestFormUrl || '');
       setSlideshowRounding(globalSettings.slideshowRounding ?? 2);
-      if (globalSettings.dashboardSidebarOrder) {
-        setSidebarOrder(globalSettings.dashboardSidebarOrder);
+      if (globalSettings.kittenConfig) setKittenConfig(globalSettings.kittenConfig);
+      if (globalSettings.slideshowImages) setSlideshowImages(globalSettings.slideshowImages);
+      if (globalSettings.layoutConfig) {
+        let merged = defaultLayoutItems.map(item => {
+           const found = globalSettings.layoutConfig.find((x:any) => x.id === item.id);
+           return found ? { ...item, ...found } : item;
+        }).sort((a,b) => (a.order || 0) - (b.order || 0));
+        
+        // Also add any new layout config items that aren't in default array (unlikely, but safe)
+        globalSettings.layoutConfig.forEach((sc:any) => {
+           if(!merged.find(m => m.id === sc.id)) merged.push(sc);
+        });
+
+        setLayoutOrder(merged.sort((a,b) => (a.order || 0) - (b.order || 0)));
       }
     }
   }, [globalSettings]);
@@ -378,15 +299,17 @@ export default function DashboardPage() {
     }
   }, [isBulkDialogOpen]);
 
-  const baseMenuItems = [
+  const menuItems = [
     { id: 'profile', label: 'My Profile', icon: <UserCircle className="w-4 h-4" />, permission: 'all' },
     { id: 'themes', label: 'Themes', icon: <Palette className="w-4 h-4" />, permission: 'superAdminOnly' },
+    { id: 'layout', label: 'Site Layout', icon: <Settings2 className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'roms', label: 'Custom ROMs', icon: <Package className="w-4 h-4" />, permission: 'canManageRoms' },
     { id: 'modules', label: 'Modules', icon: <Smartphone className="w-4 h-4" />, permission: 'canManageModules' },
     { id: 'mod-apks', label: 'Mod APKs', icon: <ShieldAlert className="w-4 h-4" />, permission: 'canManageApks' },
     { id: 'guides', label: 'Protocols', icon: <FileText className="w-4 h-4" />, permission: 'canManageGuides' },
     { id: 'branding', label: 'Logo Mgmt', icon: <LucideImage className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'root', label: 'Root Protocol', icon: <Zap className="w-4 h-4" />, permission: 'adminOnly' },
+    { id: 'live-wallpapers', label: 'Live Visuals', icon: <Video className="w-4 h-4" />, permission: 'canManageWallpapers' },
     { id: 'wallpapers', label: 'Wallpaper', icon: <ImageIcon className="w-4 h-4" />, permission: 'canManageWallpapers' },
     { id: 'visuals', label: 'Visual Protocols', icon: <Monitor className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'ai-extract', label: 'AI Terminal', icon: <Bot className="w-4 h-4" />, permission: 'adminOnly' },
@@ -395,16 +318,7 @@ export default function DashboardPage() {
     { id: 'users', label: 'Identity Mgmt', icon: <Users className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'payments', label: 'Payment Hub', icon: <CreditCard className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'maintenance', label: 'Maintenance Hub', icon: <Zap className="w-4 h-4" />, permission: 'superAdminOnly' }
-  ];
-
-  const menuItems = [...baseMenuItems].sort((a, b) => {
-    const aIndex = sidebarOrder.indexOf(a.id);
-    const bIndex = sidebarOrder.indexOf(b.id);
-    if (aIndex === -1 && bIndex === -1) return 0;
-    if (aIndex === -1) return 1;
-    if (bIndex === -1) return -1;
-    return aIndex - bIndex;
-  }).filter(item => {
+  ].filter(item => {
     if (item.permission === 'all') return true;
     if (item.permission === 'superAdminOnly') return isSuperAdmin;
     if (isSuperAdmin || profile?.role === 'admin') return true;
@@ -414,29 +328,6 @@ export default function DashboardPage() {
     }
     return false;
   });
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id || !isSuperAdmin) return;
-
-    const oldIndex = menuItems.findIndex(item => item.id === active.id);
-    const newIndex = menuItems.findIndex(item => item.id === over.id);
-
-    const newMenuItems = arrayMove(menuItems, oldIndex, newIndex);
-    const newOrder = newMenuItems.map(item => item.id);
-    
-    // Update local state first for immediate feedback
-    setSidebarOrder(newOrder);
-
-    try {
-      await updateDoc(doc(db, 'settings', 'global'), {
-        dashboardSidebarOrder: newOrder
-      });
-      toast({ title: "Site Structure Updated", description: "Sidebar hierarchy synchronized." });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Sync Failed" });
-    }
-  };
 
   useEffect(() => {
     if (menuItems.length > 0 && !activeTab) {
@@ -449,6 +340,7 @@ export default function DashboardPage() {
   const apksQuery = useMemoFirebase(() => query(collection(db, 'mod-apks'), orderBy('createdAt', 'desc')), [db]);
   const usersQuery = useMemoFirebase(() => (isSuperAdmin || isAdminRole) ? query(collection(db, 'users'), orderBy('createdAt', 'desc')) : null, [db, isSuperAdmin, isAdminRole]);
   const wallpapersQuery = useMemoFirebase(() => query(collection(db, 'wallpapers'), orderBy('createdAt', 'desc')), [db]);
+  const liveWallpapersQuery = useMemoFirebase(() => query(collection(db, 'live-wallpapers'), orderBy('createdAt', 'desc')), [db]);
   const guidesQuery = useMemoFirebase(() => query(collection(db, 'tutorials'), orderBy('createdAt', 'desc')), [db]);
   const rootQuery = useMemoFirebase(() => query(collection(db, 'root-packages'), orderBy('createdAt', 'desc')), [db]);
   const auditLogsQuery = useMemoFirebase(() => isSuperAdmin ? query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc')) : null, [db, isSuperAdmin]);
@@ -458,6 +350,7 @@ export default function DashboardPage() {
   const { data: apks } = useCollection(apksQuery);
   const { data: users } = useCollection(usersQuery);
   const { data: wallpapers } = useCollection(wallpapersQuery);
+  const { data: liveWallpapers } = useCollection(liveWallpapersQuery);
   const { data: guides } = useCollection(guidesQuery);
   const { data: rootPackages } = useCollection(rootQuery);
   const { data: auditLogs } = useCollection(auditLogsQuery);
@@ -536,6 +429,8 @@ export default function DashboardPage() {
     if (!isSuperAdmin) return;
     setIsSavingLayout(true);
     try {
+      const configToSave = layoutOrder.map((item, idx) => ({ ...item, order: idx }));
+      
       await setDoc(doc(db, 'settings', 'global'), {
         siteName,
         brandName,
@@ -544,7 +439,10 @@ export default function DashboardPage() {
         romRequestFormUrl,
         gradient: useGradient ? { colors: gradientColors, direction: gradientDirection } : null,
         faviconUrl,
-        slideshowRounding
+        slideshowRounding,
+        slideshowImages,
+        kittenConfig,
+        layoutConfig: configToSave
       }, { merge: true });
       
       toast({ title: "Layout Settings Updated", description: "Global layout synchronized successfully." });
@@ -574,7 +472,7 @@ export default function DashboardPage() {
          }
       }
 
-      const result = await extractFromContent(content || '', bulkUrl || 'pulse-buffer', globalSettings?.geminiApiKey);
+      const result = await extractFromContent(content || '', bulkUrl || 'pulse-buffer');
       const items = result.roms || [];
       setExtractedItems(items);
       setSelectedExtractedIndices(items.map((_: any, i: number) => i));
@@ -599,7 +497,7 @@ export default function DashboardPage() {
       if (collectionName === 'guides') collectionName = 'tutorials';
       else if (collectionName === 'root') collectionName = 'root-packages';
       
-      const validCollections = ['roms', 'modules', 'mod-apks', 'wallpapers', 'tutorials', 'root-packages'];
+      const validCollections = ['roms', 'modules', 'mod-apks', 'wallpapers', 'live-wallpapers', 'tutorials', 'root-packages'];
       if (!validCollections.includes(collectionName)) {
         collectionName = 'roms';
       }
@@ -642,7 +540,7 @@ export default function DashboardPage() {
       const html = event.target?.result as string;
       console.log("Neural Pulse: Transmitting data packet of size", html.length);
       try {
-        const result = await extractFromContent(html, 'file-upload', globalSettings?.geminiApiKey);
+        const result = await extractFromContent(html);
         console.log("Neural Pulse: AI response received.", result);
         const items = result.roms || [];
         setExtractedItems(items);
@@ -685,6 +583,7 @@ export default function DashboardPage() {
     // Determine collection based on active tab
     let collectionName = 'roms';
     if (activeTab === 'wallpapers') collectionName = 'wallpapers';
+    else if (activeTab === 'live-wallpapers') collectionName = 'live-wallpapers';
     else if (activeTab === 'mod-apks') collectionName = 'mod-apks';
     else if (activeTab === 'modules') collectionName = 'modules';
     
@@ -864,6 +763,7 @@ export default function DashboardPage() {
       case 'modules': return modules;
       case 'mod-apks': return apks;
       case 'wallpapers': return wallpapers;
+      case 'live-wallpapers': return liveWallpapers;
       case 'guides': return guides;
       case 'root': return rootPackages;
       case 'history': return [];
@@ -905,31 +805,34 @@ export default function DashboardPage() {
 
       <div className="flex flex-col lg:flex-row gap-10 items-start">
         {/* Navigation Sidebar (Desktop) / Tab Bar (Mobile) */}
-        <aside className="w-full lg:w-80 lg:shrink-0 lg:sticky lg:top-32 space-y-4 z-40">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex flex-row overflow-x-auto lg:flex-col gap-4 p-4 bg-card/30 backdrop-blur-xl border border-border rounded-3xl lg:rounded-[2.5rem] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-hide snap-x snap-mandatory scroll-px-10">
-              <div className="hidden lg:block h-2" /> 
-              <SortableContext
-                items={menuItems.map(i => i.id)}
-                strategy={verticalListSortingStrategy}
+        <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-32 space-y-4 z-40">
+          <div className="flex flex-row overflow-x-auto lg:flex-col gap-2 p-2 bg-card/30 backdrop-blur-xl border border-border rounded-3xl lg:rounded-[2.5rem] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent snap-x snap-mandatory scroll-pl-4">
+            <div className="min-w-[1rem] lg:hidden" /> {/* Left spacer for mobile */}
+            {menuItems.map((item) => (
+              <motion.button
+                key={item.id}
+                whileHover={{ x: 4, backgroundColor: "rgba(var(--primary), 0.1)" }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setActiveTab(item.id)}
+                className={cn(
+                  "flex items-center gap-3 px-5 py-4 rounded-2xl transition-all font-black text-[10px] uppercase border text-left min-w-max lg:w-full snap-start",
+                  activeTab === item.id 
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                    : "bg-transparent text-muted-foreground border-transparent hover:border-border/50 hover:text-foreground"
+                )}
               >
-                {menuItems.map((item) => (
-                  <SortableSidebarItem
-                    key={item.id}
-                    item={item}
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    isSuperAdmin={isSuperAdmin}
-                  />
-                ))}
-              </SortableContext>
-              <div className="min-w-[4rem] lg:hidden" /> {/* Extra spacing for slider end */}
-            </div>
-          </DndContext>
+                <div className={cn(
+                  "w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0",
+                  activeTab === item.id ? "bg-white/20" : "bg-muted"
+                )}>
+                  {item.icon}
+                </div>
+                <span className="flex-1 uppercase tracking-widest whitespace-nowrap">{item.label}</span>
+                {activeTab === item.id && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_#fff] animate-pulse shrink-0" />}
+              </motion.button>
+            ))}
+            <div className="min-w-[1rem] lg:hidden" /> {/* Right spacer for mobile */}
+          </div>
 
           {/* Quick Stats or Info could go here */}
           <div className="hidden lg:block p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10">
@@ -1135,7 +1038,93 @@ export default function DashboardPage() {
                   </div>
                 </Card>
 
-                <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6">
+                <div className="flex flex-col gap-8">
+                  <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Section Visibility & Order</h3>
+                    <p className="text-[10px] text-muted-foreground uppercase mb-4">Drag to reorder sections. Toggle switch to show/hide.</p>
+                    <Reorder.Group axis="y" values={layoutOrder} onReorder={setLayoutOrder} className="space-y-2">
+                      {layoutOrder.map((section) => (
+                        <Reorder.Item key={section.id} value={section} className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-border/50 cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors">
+                          <div className="flex items-center gap-4 text-[10px] uppercase font-black tracking-widest">
+                            <span className="text-muted-foreground/50">::</span>
+                            {section.label || section.id}
+                          </div>
+                          <Switch 
+                            checked={section.visible} 
+                            onCheckedChange={(c) => {
+                              setLayoutOrder(layoutOrder.map(s => s.id === section.id ? { ...s, visible: c } : s));
+                            }} 
+                          />
+                        </Reorder.Item>
+                      ))}
+                    </Reorder.Group>
+                  </Card>
+
+                  <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Slideshow Images</h3>
+                    <div className="space-y-4">
+                      <div className="flex gap-2 text-[10px] font-black uppercase">
+                        <Input value={newSlideshowUrl} onChange={e => setNewSlideshowUrl(e.target.value)} placeholder="Image URL..." className="h-10 rounded-xl bg-black/40 border-border text-[10px]" />
+                        <Button className="h-10 rounded-xl text-[10px] uppercase font-black" onClick={() => { if(newSlideshowUrl) { setSlideshowImages([...slideshowImages, {url: newSlideshowUrl, orientation: 'cover', size: '400px', deleted: false} as any]); setNewSlideshowUrl(''); }}}>Add Image</Button>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {slideshowImages.map((img: any, i) => {
+                          const extractedUrl = typeof img === 'string' ? img : (typeof img?.url === 'string' ? img.url : '');
+                          return (
+                            <div key={i} className="flex justify-between items-center bg-black/20 p-2 rounded-xl border border-border">
+                              {extractedUrl ? <img src={extractedUrl} className="w-10 h-10 object-cover rounded-md bg-muted" alt="slide" /> : <div className="w-10 h-10 bg-muted/20 rounded-md" />}
+                              <span className="text-[10px] font-code truncate flex-1 mx-4 text-muted-foreground">{extractedUrl || '[Invalid URL]'}</span>
+                              <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-500/10 h-8 w-8 rounded-lg" onClick={() => setSlideshowImages(slideshowImages.filter((_, idx) => idx !== i))}><Trash2 className="w-4 h-4"/></Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6 lg:col-span-2">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Floating Kitten Configuration</h3>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] font-black uppercase tracking-widest">Enable Kitten</Label>
+                      <Switch 
+                        checked={kittenConfig.enabled} 
+                        onCheckedChange={(c) => setKittenConfig({ ...kittenConfig, enabled: c })} 
+                      />
+                    </div>
+                    {kittenConfig.enabled && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Image / GIF URL</Label>
+                          <Input 
+                            value={kittenConfig.imageUrl} 
+                            onChange={(e) => setKittenConfig({ ...kittenConfig, imageUrl: e.target.value })} 
+                            className="h-10 rounded-xl bg-black/40 border-border" 
+                          />
+                        </div>
+                        <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Speed</Label>
+                          <Input 
+                            type="number"
+                            value={kittenConfig.speed} 
+                            onChange={(e) => setKittenConfig({ ...kittenConfig, speed: parseInt(e.target.value) || 2 })} 
+                            className="h-10 rounded-xl bg-black/40 border-border" 
+                          />
+                        </div>
+                        <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Size (px)</Label>
+                          <Input 
+                            type="number"
+                            value={kittenConfig.size} 
+                            onChange={(e) => setKittenConfig({ ...kittenConfig, size: parseInt(e.target.value) || 100 })} 
+                            className="h-10 rounded-xl bg-black/40 border-border" 
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                </div>
+                
+                <Card className="p-8 rounded-[2.5rem] bg-muted/30 border-border space-y-6 lg:col-span-2">
                   <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Gradient Configuration</h3>
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Enable Gradient Background</Label>
@@ -1152,7 +1141,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest">Direction ({gradientDirection}deg)</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Direction ({gradientDirection}°)</Label>
                     <Slider value={[gradientDirection]} min={0} max={360} step={1} onValueChange={(val) => setGradientDirection(val[0])} />
                   </div>
                 </Card>
@@ -1534,6 +1523,7 @@ export default function DashboardPage() {
                                    <SelectItem value="modules" className="text-[9px] font-black uppercase">Modules</SelectItem>
                                    <SelectItem value="mod-apks" className="text-[9px] font-black uppercase">APKs</SelectItem>
                                    <SelectItem value="wallpapers" className="text-[9px] font-black uppercase">Walls</SelectItem>
+                                   <SelectItem value="live-wallpapers" className="text-[9px] font-black uppercase">Live Walls</SelectItem>
                                 </SelectContent>
                              </Select>
                          </div>
@@ -1772,7 +1762,7 @@ export default function DashboardPage() {
                       <Card className="p-6 rounded-[2rem] bg-card border-border hover:border-primary/30 transition-all flex flex-col justify-between h-full shadow-lg hover:shadow-primary/5">
                         <div className="flex items-start gap-4 mb-6">
                           <div className="w-16 h-16 rounded-2xl bg-muted overflow-hidden flex items-center justify-center shrink-0 border border-border/10 group-hover:scale-105 transition-transform">
-                            {item.imageUrl ? <MediaPreview src={item.imageUrl} className="w-full h-full object-cover" /> : <Package className="w-8 h-8 text-muted-foreground" />}
+                            {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <Package className="w-8 h-8 text-muted-foreground" />}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h4 className="font-black uppercase text-sm truncate mb-1">{item.name || item.title}</h4>
@@ -1884,18 +1874,11 @@ export default function DashboardPage() {
               )}
 
               <div className="space-y-2">
-                <Label className="text-[9px] font-black uppercase ml-1">Thumbnail Image URL</Label>
-                <Input name="imageUrl" placeholder="Static Preview (JPG/PNG)" className="bg-muted rounded-xl h-12" />
+                <Label className="text-[9px] font-black uppercase ml-1">Visual Preview URL</Label>
+                <Input name="imageUrl" placeholder="HTTPS Asset Link" className="bg-muted rounded-xl h-12" />
               </div>
 
-              {activeTab === 'roms' && (
-                <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase ml-1">Looping Preview Video</Label>
-                  <Input name="videoUrl" placeholder="Direct .mp4 Link" className="bg-muted rounded-xl h-12" />
-                </div>
-              )}
-
-              {(activeTab === 'roms' || activeTab === 'wallpapers') && (
+              {(activeTab === 'roms' || activeTab === 'wallpapers' || activeTab === 'live-wallpapers') && (
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase ml-1">Category / Tag</Label>
                   <Input name="category" placeholder="E.g. AOSP, Nature, 60fps" className="bg-muted rounded-xl h-12" />
@@ -2165,18 +2148,11 @@ export default function DashboardPage() {
               )}
 
               <div className="space-y-2">
-                <Label className="text-[9px] font-black uppercase ml-1">Thumbnail Image URL</Label>
-                <Input name="imageUrl" defaultValue={editingItem?.imageUrl} placeholder="Static Preview (JPG/PNG)" className="bg-muted rounded-xl h-12" />
+                <Label className="text-[9px] font-black uppercase ml-1">Visual Preview URL</Label>
+                <Input name="imageUrl" defaultValue={editingItem?.imageUrl} placeholder="HTTPS Asset Link" className="bg-muted rounded-xl h-12" />
               </div>
 
-              {activeTab === 'roms' && (
-                <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase ml-1">Looping Preview Video</Label>
-                  <Input name="videoUrl" defaultValue={editingItem?.videoUrl} placeholder="Direct .mp4 Link" className="bg-muted rounded-xl h-12" />
-                </div>
-              )}
-
-              {(activeTab === 'roms' || activeTab === 'wallpapers') && (
+              {(activeTab === 'roms' || activeTab === 'wallpapers' || activeTab === 'live-wallpapers') && (
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase ml-1">Category / Tag</Label>
                   <Input name="category" defaultValue={editingItem?.category} placeholder="E.g. AOSP, Nature, 60fps" className="bg-muted rounded-xl h-12" />

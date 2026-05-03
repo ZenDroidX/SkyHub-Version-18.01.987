@@ -13,9 +13,8 @@ import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { DEFAULT_DONATION_CONFIG, SiteSettings } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { resolveImageUrl } from '@/lib/image-resolver';
 
 export function Hero() {
   const db = useFirestore();
@@ -38,8 +37,15 @@ export function Hero() {
   const qrLink = globalSettings?.supportLinks?.qrLink || qrUrl;
   const slideshowImages = globalSettings?.slideshowImages || [];
 
-  const heroTitle = globalSettings?.heroTitle || 'REDMI 12 5G\nPOCO M6 PRO 5G';
-  const heroSubtitle = globalSettings?.heroSubtitle || 'The definitive command center for sky-platform development.\nUnleash Snapdragon 4 Gen 2 with premium custom kernels and system builds.';
+  const rawHeroTitle = globalSettings?.heroTitle || 'REDMI 12 5G\nPOCO M6 PRO 5G';
+  const heroTitle = rawHeroTitle.includes("hemlo User's") 
+    ? 'REDMI 12 5G\nPOCO M6 PRO 5G' 
+    : rawHeroTitle;
+
+  const rawHeroSubtitle = globalSettings?.heroSubtitle || 'The definitive command center for sky-platform development.\nUnleash Snapdragon 4 Gen 2 with premium custom kernels and system builds.';
+  const heroSubtitle = rawHeroTitle.includes("hemlo User's")
+    ? 'The definitive command center for sky-platform development.\nUnleash Snapdragon 4 Gen 2 with premium custom kernels and system builds.'
+    : rawHeroSubtitle;
 
   const titleLines = heroTitle.split('\n');
 
@@ -108,7 +114,7 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-medium leading-relaxed tracking-tight whitespace-pre-line"
         >
-          Sky-platform development command center. Unleash your device&apos;s potential.
+          {heroSubtitle}
         </motion.p>
 
         {/* Translucent Network Bar Protocol with Lightning Effects */}
@@ -135,7 +141,7 @@ export function Hero() {
             <div className="relative z-10 flex items-center gap-3">
               {telegramLogo ? (
                 <div className="w-6 h-6 rounded-full overflow-hidden bg-background/50 border border-border/20 flex items-center justify-center group-hover:border-blue-500/50 transition-all">
-                  <img src={resolveImageUrl(telegramLogo)} className="w-full h-full object-contain" alt="Logo" />
+                  <img src={telegramLogo} className="w-full h-full object-contain" alt="Logo" />
                 </div>
               ) : <Send className="w-4 h-4" />}
               <span>Official Channel</span>
@@ -232,7 +238,7 @@ export function Hero() {
           </DialogHeader>
           
           <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            {qrLink && <img src={resolveImageUrl(qrLink)} alt="Payment QR" className="w-full h-full object-contain" />}
+            {qrLink && <img src={qrLink} alt="Payment QR" className="w-full h-full object-contain" />}
           </div>
 
           <div className="w-full space-y-4">

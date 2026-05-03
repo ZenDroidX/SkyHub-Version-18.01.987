@@ -157,8 +157,8 @@ export default function ThemeManager() {
               </Button>
             </div>
             <div className="space-y-2">
-              <Label>Gradient Direction ({Number(gradientDirection) || 0}deg)</Label>
-              <Slider value={[Number(gradientDirection) || 0]} onValueChange={(v) => setGradientDirection(v[0])} min={0} max={360} step={1} />
+              <Label>Gradient Direction ({gradientDirection}deg)</Label>
+              <Slider value={[gradientDirection]} onValueChange={(v) => setGradientDirection(v[0])} min={0} max={360} step={1} />
             </div>
             <div className="space-y-2">
               <Label>Gradient Colors</Label>
@@ -204,12 +204,12 @@ export default function ThemeManager() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Border Radius ({Number(customRadius) || 0}rem)</Label>
-              <Slider value={[Number(customRadius) || 0]} onValueChange={(v) => setCustomRadius(v[0])} min={0} max={2} step={0.1} />
+              <Label>Border Radius ({customRadius}rem)</Label>
+              <Slider value={[customRadius]} onValueChange={(v) => setCustomRadius(v[0])} min={0} max={2} step={0.1} />
             </div>
             <div className="space-y-2">
-              <Label>Spacing ({Number(customSpacing) || 0}rem)</Label>
-              <Slider value={[Number(customSpacing) || 0]} onValueChange={(v) => setCustomSpacing(v[0])} min={0.5} max={2} step={0.1} />
+              <Label>Spacing ({customSpacing}rem)</Label>
+              <Slider value={[customSpacing]} onValueChange={(v) => setCustomSpacing(v[0])} min={0.5} max={2} step={0.1} />
             </div>
           </div>
         </div>

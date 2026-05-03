@@ -15,7 +15,6 @@ import { Loader2, Plus, Trash2, Edit2, Upload, User, Heart, Settings2, Eye, EyeO
 import { SiteSettings } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { resolveImageUrl } from '@/lib/image-resolver';
 
 export default function DonorManager() {
   const db = useFirestore();
@@ -35,7 +34,6 @@ export default function DonorManager() {
     name: '',
     username: '',
     message: '',
-    amount: '',
     avatarUrl: '',
     visible: true,
     priority: 0
@@ -102,7 +100,6 @@ export default function DonorManager() {
         name: '',
         username: '',
         message: '',
-        amount: '',
         avatarUrl: '',
         visible: true,
         priority: 0
@@ -181,8 +178,8 @@ export default function DonorManager() {
               <Label className="text-[10px] font-black uppercase tracking-widest">Scroll Duration ({showcaseSettings?.speed}s)</Label>
               <Input 
                 type="range" min="10" max="100" 
-                value={Number(showcaseSettings?.speed) || 30} 
-                onChange={(e) => setShowcaseSettings(prev => ({ ...prev, speed: parseInt(e.target.value) || 30 }))}
+                value={showcaseSettings?.speed} 
+                onChange={(e) => setShowcaseSettings(prev => ({ ...prev, speed: parseInt(e.target.value) }))}
                 className="accent-primary"
               />
             </div>
@@ -192,7 +189,7 @@ export default function DonorManager() {
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest">Visual Style</Label>
               <Select 
-                value={showcaseSettings?.style || 'glassmorphism'} 
+                value={showcaseSettings?.style} 
                 onValueChange={(val: any) => setShowcaseSettings(prev => ({ ...prev, style: val }))}
               >
                 <SelectTrigger className="h-11 rounded-xl bg-muted/50 border-border">
@@ -246,21 +243,16 @@ export default function DonorManager() {
                     <Label className="text-[10px] font-black uppercase tracking-widest">Message</Label>
                     <Input value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} placeholder="e.g. Keep up the great work!" className="bg-background" />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest">Donation Amount</Label>
-                    <Input value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} placeholder="e.g. $50" className="bg-background" />
-                  </div>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Avatar / Logo</Label>
                     <div className="flex gap-4 items-center">
                       <div className="w-16 h-16 rounded-full bg-muted border-2 border-border overflow-hidden shrink-0">
-                        {formData.avatarUrl ? <img src={resolveImageUrl(formData.avatarUrl)} alt="Preview" className="w-full h-full object-cover" /> : <User className="w-full h-full p-4 opacity-20" />}
+                        {formData.avatarUrl ? <img src={formData.avatarUrl} alt="Preview" className="w-full h-full object-cover" /> : <User className="w-full h-full p-4 opacity-20" />}
                       </div>
                       <div className="flex-1 space-y-2">
-                        <Input value={formData.avatarUrl} onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})} placeholder="Image URL (Google Drive / Direct)" className="bg-background text-xs" />
-                        <p className="text-[8px] text-muted-foreground">For Google Photos: Open image, right click &quot;Copy Image Address&quot;</p>
+                        <Input value={formData.avatarUrl} onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})} placeholder="Image URL" className="bg-background text-xs" />
                         <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border cursor-pointer hover:bg-muted transition-colors">
                           <Upload className="w-4 h-4" />
                           <span className="text-[10px] font-black uppercase">Upload File</span>
@@ -272,7 +264,7 @@ export default function DonorManager() {
                   <div className="flex items-center gap-6 pt-4">
                     <div className="space-y-2 flex-1">
                       <Label className="text-[10px] font-black uppercase tracking-widest">Priority</Label>
-                      <Input type="number" value={isNaN(Number(formData.priority)) ? 0 : formData.priority} onChange={(e) => setFormData({...formData, priority: parseInt(e.target.value) || 0})} className="bg-background" />
+                      <Input type="number" value={formData.priority} onChange={(e) => setFormData({...formData, priority: parseInt(e.target.value)})} className="bg-background" />
                     </div>
                     <Button onClick={handleAddDonor} disabled={!formData.name || isUploading} className="flex-1 h-12 rounded-xl">
                       {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Registration'}
@@ -294,7 +286,7 @@ export default function DonorManager() {
               <div className="relative mb-4">
                 <div className="w-20 h-20 rounded-full border-4 border-muted overflow-hidden group-hover:border-primary/20 transition-all">
                   {donor.avatarUrl ? (
-                    <img src={resolveImageUrl(donor.avatarUrl)} alt={donor.name} className="w-full h-full object-cover" />
+                    <img src={donor.avatarUrl} alt={donor.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-muted flex items-center justify-center"><User className="w-10 h-10 opacity-20" /></div>
                   )}
@@ -311,7 +303,6 @@ export default function DonorManager() {
                 <div className="space-y-3 w-full">
                   <Input defaultValue={donor.name} onBlur={(e) => handleUpdateDonor(donor.id, { name: e.target.value })} className="h-9 px-3 text-sm text-center" />
                   <Input defaultValue={donor.username} onBlur={(e) => handleUpdateDonor(donor.id, { username: e.target.value })} className="h-9 px-3 text-xs text-center text-muted-foreground" placeholder="@username" />
-                  <Input defaultValue={donor.amount} onBlur={(e) => handleUpdateDonor(donor.id, { amount: e.target.value })} className="h-9 px-3 text-xs text-center" placeholder="Amount" />
                   <Input defaultValue={donor.message} onBlur={(e) => handleUpdateDonor(donor.id, { message: e.target.value })} className="h-9 px-3 text-xs text-center" placeholder="Message" />
                   <Button variant="ghost" size="sm" onClick={() => setIsEditing(null)} className="w-full h-8 text-[9px] font-black uppercase">Finish</Button>
                 </div>
@@ -319,7 +310,6 @@ export default function DonorManager() {
                 <>
                   <h4 className="font-bold text-lg leading-tight">{donor.name}</h4>
                   {donor.username && <p className="text-xs text-muted-foreground mb-3">@{donor.username}</p>}
-                  {donor.amount && <div className="mb-2 text-xs font-black text-primary uppercase tracking-widest px-3 py-1 bg-primary/5 rounded-lg border border-primary/10">{donor.amount}</div>}
                   {donor.message && <p className="text-sm italic text-muted-foreground/80 line-clamp-2 px-2">&quot;{donor.message}&quot;</p>}
                 </>
               )}

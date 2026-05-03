@@ -14,7 +14,6 @@ service cloud.firestore {
           request.auth.token.email.lower() == 'meinkxun@gmail.com' ||
           request.auth.token.email.lower() == 'skyhubowner@gmail.com'
         )) ||
-        request.auth.uid == 'FvAcZ7trL3Vvq5bpcI70dx6lqg93' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')
       );
@@ -41,11 +40,6 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
-    }
-
-    match /donors/{document=**} {
-      allow read: if true;
-      allow write: if isAdmin();
     }
 
     match /users/{userId} {
@@ -124,6 +118,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /donors/{donorId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /notifications/{notificationId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -137,10 +136,6 @@ service cloud.firestore {
     match /audit_logs/{logId} {
       allow read: if isSuperAdmin();
       allow create: if isSignedIn();
-    }
-
-    match /telegram_logs/{logId} {
-      allow read, list: if isAdmin();
     }
 
     // OTP Codes: Allow server actions to write and client to read for verification

@@ -23,7 +23,6 @@ const ResourceExtractionSchema = z.object({
   description: z.string().describe('Detailed description, features, or changelog.'),
   downloadUrl: z.string().describe('Primary download or direct asset link.'),
   imageUrl: z.string().optional().describe('Preview image or thumbnail URL.'),
-  bootAnimationUrl: z.string().optional().describe('Link to a custom boot animation GIF or video if available.'),
   mirrors: z.array(z.string()).optional().describe('Additional redundant download links.'),
   screenshots: z.array(z.string()).optional().describe('System screenshot URLs.'),
   addons: z.array(z.object({

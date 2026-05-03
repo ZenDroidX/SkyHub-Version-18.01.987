@@ -37,26 +37,28 @@ export function initializeFirebase() {
 
   // Connection validation as per best practices
   if (typeof window !== 'undefined') {
-    // Neural pulse: perform connection check after a short delay to allow environment stabilization
-    setTimeout(async () => {
+    (async () => {
       try {
         // Attempt to reach the server to verify connectivity
-        // We use getServerDoc to explicitly bypass cache and check the real backend
         await getDocFromServer(doc(firestoreInstance!, 'test', 'connection'));
         console.log("Firestore: Neural connection established.");
       } catch (error: any) {
-        if (error?.code === 'permission-denied' || error?.code === 'not-found') {
-          console.log("Firestore: Handshake successful (server reached).");
+        if (error?.code === 'permission-denied') {
+          console.log("Firestore: Handshake successful (server reached, but test document access restricted).");
           return;
         }
 
-        if (error?.code === 'unavailable' || error?.message?.includes('client is offline')) {
-          console.warn("Firestore [UNAVAILABLE]: The backend is currently unreachable. The application will continue in OFFLINE mode.");
+        if (error?.code === 'unavailable' || error?.message?.includes('the client is offline')) {
+          console.warn("Firestore [UNAVAILABLE]: The backend is currently unreachable. The application will continue in OFFLINE mode using local cache.");
+          errorEmitter.emit('connectivity-error', { 
+            message: "Cloud Firestore is currently unreachable. Changes will sync once the connection is restored.",
+            code: error?.code || 'unavailable'
+          });
         } else {
           console.error("Firestore connectivity pulse failed:", error);
         }
       }
-    }, 1000);
+    })();
   }
 
   return {

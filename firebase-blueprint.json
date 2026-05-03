@@ -61,23 +61,6 @@
         "welcomeMessage": { "type": "string" },
         "heroTitle": { "type": "string" },
         "heroSubtitle": { "type": "string" },
-        "upiId": { "type": "string", "description": "UPI ID for contributions" },
-        "upiAmount": { "type": "string", "description": "Pre-configured payment amount" },
-        "qrImageUrl": { "type": "string", "description": "URL to QR code image" },
-        "siteAnimation": {
-          "type": "string",
-          "enum": ["none", "fade", "slide", "bounce", "zoom"],
-          "description": "Global transition animation style."
-        },
-        "seo": {
-          "type": "object",
-          "properties": {
-            "title": { "type": "string" },
-            "description": { "type": "string" },
-            "keywords": { "type": "string" },
-            "ogImage": { "type": "string" }
-          }
-        },
         "donorShowcase": {
           "type": "object",
           "properties": {
@@ -185,45 +168,12 @@
         "name": { "type": "string" },
         "username": { "type": "string" },
         "message": { "type": "string" },
-        "amount": { "type": "string" },
         "avatarUrl": { "type": "string" },
         "visible": { "type": "boolean" },
         "priority": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "visible"]
-    },
-    "TelegramLog": {
-      "title": "Telegram Log",
-      "description": "Records related to automated Telegram ROM extractions.",
-      "type": "object",
-      "properties": {
-        "text": { "type": "string" },
-        "raw_text": { "type": "string" },
-        "extracted_count": { "type": "number" },
-        "error": { "type": "string" },
-        "created_at": { "type": "string", "format": "date-time" }
-      }
-    },
-    "ROM": {
-      "title": "ROM",
-      "description": "A custom ROM or system modification.",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "version": { "type": "string" },
-        "device": { "type": "string" },
-        "downloadUrl": { "type": "string" },
-        "imageUrl": { "type": "string" },
-        "videoUrl": { "type": "string", "description": "Looping preview video (optional)" },
-        "bootAnimationUrl": { "type": "string" },
-        "changelog": { "type": "string" },
-        "author": { "type": "string" },
-        "status": { "type": "string", "enum": ["published", "draft"] },
-        "source": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["name", "downloadUrl"]
     }
   },
   "firestore": {
@@ -246,14 +196,6 @@
     "/donors/{donorId}": {
       "schema": "Donor",
       "description": "Collection of donors for the showcase."
-    },
-    "/telegram_logs/{logId}": {
-      "schema": "TelegramLog",
-      "description": "Logs for automated Telegram extractions."
-    },
-    "/roms/{romId}": {
-      "schema": "ROM",
-      "description": "Collection of hosted ROMs."
     }
   }
 }

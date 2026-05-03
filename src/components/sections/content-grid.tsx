@@ -59,12 +59,10 @@ import { useSearch } from '@/context/SearchContext';
 import { collection, doc, increment, updateDoc } from 'firebase/firestore';
 import { logActivity } from '@/lib/activity-logger';
 import { initializeFirebase } from '@/firebase';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SiteSettings } from '@/lib/store';
 
 import { cn } from '@/lib/utils';
-import { MediaPreview } from '@/components/MediaPreview';
-import { resolveImageUrl } from '@/lib/image-resolver';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -81,6 +79,17 @@ const ICON_REGISTRY: Record<string, React.ReactNode> = {
   'Activity': <Activity className="w-6 h-6" />,
   'Code': <Code className="w-6 h-6" />,
   'Video': <Video className="w-6 h-6" />,
+};
+
+const convertDriveLink = (url: string) => {
+  if (!url) return '';
+  if (url.includes('drive.google.com')) {
+    const match = url.match(/\/d\/(.+?)\/(view|edit|usp=sharing)?/);
+    if (match && match[1]) {
+      return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+    }
+  }
+  return url;
 };
 
 const parseLinks = (text: string) => {
@@ -125,8 +134,8 @@ const initiateDownload = async (db: any, auth: any, collectionName: string, id: 
     console.error("Neural telemetry error:", e);
   }
 
-  const optimizedUrl = resolveImageUrl(url);
-  const isDirectRegistry = url.includes('firebasestorage.googleapis.com') || url.includes('drive.google.com/uc') || url.includes('docs.google.com/uc');
+  const optimizedUrl = convertDriveLink(url);
+  const isDirectRegistry = url.includes('firebasestorage.googleapis.com') || url.includes('drive.google.com/uc');
 
   if (isDirectRegistry) {
     try {
@@ -163,8 +172,6 @@ const LoadingState = ({ label }: { label: string }) => (
     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
   </div>
 );
-
-
 
 export function ROMCard({ rom }: { rom: any }) {
   const db = useFirestore();
@@ -209,9 +216,9 @@ export function ROMCard({ rom }: { rom: any }) {
         }}
       >
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-background/50 flex items-center justify-center p-6 text-center">
-          {(rom.videoUrl || rom.imageUrl) ? (
-            <MediaPreview 
-              src={rom.videoUrl || rom.imageUrl} 
+          {rom.imageUrl ? (
+            <img 
+              src={rom.imageUrl} 
               alt={rom.name} 
               className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-500 scale-105 group-hover:scale-100" 
             />
@@ -236,14 +243,7 @@ export function ROMCard({ rom }: { rom: any }) {
         </div>
         
         <div className="p-8 flex flex-col flex-1">
-          <div className="mb-4">
-            <h3 className="text-2xl font-black uppercase tracking-tight text-foreground leading-tight">{rom.name}</h3>
-            {rom.author && (
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 mt-1">
-                Developer: {rom.author}
-              </p>
-            )}
-          </div>
+          <h3 className="text-2xl font-black uppercase mb-4 tracking-tight text-foreground">{rom.name}</h3>
           
           <div className={cn(
             "text-sm text-foreground/70 transition-all duration-300 whitespace-pre-wrap leading-relaxed flex-1", 
@@ -261,7 +261,7 @@ export function ROMCard({ rom }: { rom: any }) {
                         <div className="flex gap-4">
                           {screenshots?.map((src: string, idx: number) => (
                             <div key={idx} className="relative w-56 aspect-[9/16] shrink-0 rounded-3xl overflow-hidden border border-white/10 cursor-pointer hover:scale-[1.02] transition-transform" onClick={() => { setSelectedImage(src); setIsPreviewOpen(true); }}>
-                              <MediaPreview src={src} className="w-full h-full object-cover" alt="SC" />
+                              <img src={src} className="w-full h-full object-cover" alt="SC" />
                             </div>
                           ))}
                         </div>
@@ -274,24 +274,6 @@ export function ROMCard({ rom }: { rom: any }) {
                       <LinkIcon className="w-4 h-4" /> Primary Acquisition Protocol
                     </Button>
                   </div>
-
-                  {rom.bootAnimationUrl && (
-                    <div className="space-y-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-primary/80 flex items-center gap-2">
-                        <Zap className="w-3 h-3" /> Boot Animation Protocol
-                      </p>
-                      <div className="relative aspect-video rounded-3xl overflow-hidden border border-white/10 bg-black/40 group/boot">
-                         <MediaPreview 
-                           src={rom.bootAnimationUrl} 
-                           className="w-full h-full object-contain" 
-                           alt="Boot Anim" 
-                         />
-                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/boot:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm">
-                            <span className="text-[10px] font-black uppercase">Visual Preview Enabled</span>
-                         </div>
-                      </div>
-                    </div>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -316,7 +298,7 @@ export function ROMCard({ rom }: { rom: any }) {
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
           <DialogContent className="max-w-[100vw] w-screen h-screen p-0 border-none bg-black/95 backdrop-blur-3xl overflow-hidden rounded-none shadow-none flex flex-col">
             <div className="relative flex-1 w-full flex items-center justify-center p-4">
-              <MediaPreview src={selectedImage || ''} className="max-w-full max-h-full object-contain rounded-2xl" alt="Preview" />
+              <img src={selectedImage || undefined} className="max-w-full max-h-full object-contain rounded-2xl" alt="Preview" />
               <Button onClick={() => setIsPreviewOpen(false)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 z-[60]" variant="ghost" size="icon">
                 <X className="w-6 h-6 text-white" />
               </Button>
@@ -390,7 +372,7 @@ function ModApkCard({ apk }: { apk: any }) {
         <div className="p-6">
           <div className="relative aspect-square w-full bg-muted/20 flex items-center justify-center rounded-[2.5rem] overflow-hidden border border-border/10 p-10 text-center">
             {apk.imageUrl ? (
-              <MediaPreview src={apk.imageUrl} alt={apk.name} className="max-w-full max-h-full object-contain drop-shadow-2xl" />
+              <img src={apk.imageUrl} alt={apk.name} className="max-w-full max-h-full object-contain drop-shadow-2xl" />
             ) : (
               <div className="flex flex-col items-center gap-3">
                 <Package className="w-8 h-8 text-muted-foreground/30" />
@@ -492,7 +474,7 @@ export function CustomGrid({ section, items, isLoading }: { section: any, items:
             <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">
               <div className="relative aspect-video w-full overflow-hidden bg-background/50 flex items-center justify-center p-6 text-center">
                 {item.imageUrl ? (
-                  <MediaPreview src={item.imageUrl} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
+                  <img src={item.imageUrl} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center gap-3">
                     <Layers className="w-8 h-8 text-muted-foreground/30" />
@@ -539,6 +521,44 @@ export function GuideGrid({ guides, isLoading }: { guides: any[], isLoading: boo
         ))}
       </motion.div>
     </div>
+  );
+}
+
+export function LiveWallpaperGrid({ wallpapers, isLoading }: { wallpapers: any[], isLoading: boolean }) {
+  const db = useFirestore();
+  const { auth } = initializeFirebase();
+  if (isLoading) return <LoadingState label="Rendering Visuals..." />;
+  return (
+    <section id="live-wallpapers" className="py-32 max-w-7xl mx-auto px-6">
+      <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-20">LIVE <span className="text-blue-600">VISUALS</span></h2>
+      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.05 }}>
+        {wallpapers?.map((wall) => (
+          <motion.div key={wall.id} variants={cardVariants} whileHover={{ y: -5 }}>
+            <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">
+              <div className="relative aspect-[9/16] w-full bg-background/50 overflow-hidden flex items-center justify-center p-8 text-center">
+                {(wall.previewUrl || wall.imageUrl) ? (
+                  <img src={wall.previewUrl || wall.imageUrl} alt="Live" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-4">
+                    <Video className="w-10 h-10 text-muted-foreground/30" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 leading-tight">
+                      Sorry for the inconveniences,<br />visual will be added soon
+                    </p>
+                  </div>
+                )}
+                <div className="absolute bottom-8 left-8 right-8">
+                  <h3 className="text-xl font-black uppercase tracking-tight text-foreground mb-2">{wall.name || "Sky Visual"}</h3>
+                  <div className="text-[9px] font-black uppercase text-muted-foreground mb-4">{wall.downloadCount || 0} DOWNLOADS</div>
+                  <motion.div whileTap={{ scale: 0.95 }}>
+                    <Button onClick={() => initiateDownload(db, auth, 'live-wallpapers', wall.id, wall.downloadUrl, wall.name)} className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]">Sync Visual</Button>
+                  </motion.div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        ))}
+      </motion.div>
+    </section>
   );
 }
 

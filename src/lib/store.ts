@@ -90,8 +90,13 @@ export interface SiteSettings {
   heroSubtitle?: string;
   slideshowRounding?: number;
   layoutConfig?: any[];
-  dashboardSidebarOrder?: string[];
   slideshowImages?: any[];
+  kittenConfig?: {
+    enabled: boolean;
+    imageUrl: string;
+    speed: number;
+    size: number;
+  };
   supportLinks?: {
     paymentLink?: string;
     qrLink?: string;
@@ -108,26 +113,6 @@ export interface SiteSettings {
     style?: 'glassmorphism' | 'neon' | 'classic' | 'minimal';
     showParticles?: boolean;
   };
-  geminiApiKey?: string;
-  siteAnimation?: 'none' | 'fade' | 'slide' | 'bounce' | 'zoom';
-  seo?: {
-    title?: string;
-    description?: string;
-    keywords?: string;
-    ogImage?: string;
-  };
-}
-
-export interface Donor {
-  id: string;
-  name: string;
-  username?: string;
-  message?: string;
-  amount?: string;
-  avatarUrl?: string;
-  visible: boolean;
-  priority: number;
-  createdAt: any;
 }
 
 export type DonationConfig = SiteSettings;

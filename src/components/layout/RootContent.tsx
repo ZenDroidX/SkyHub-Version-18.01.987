@@ -7,7 +7,6 @@ import { AudioLobby } from '@/components/layout/audio-lobby';
 import { useFirebase, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { DEFAULT_DONATION_CONFIG } from '@/lib/store';
-import { motion, AnimatePresence } from 'motion/react';
 
 function Countdown({ endDate }: { endDate: Date }) {
   const [mounted, setMounted] = useState(false);
@@ -104,16 +103,6 @@ export function RootContent({ children }: { children: React.ReactNode }) {
 
   const showLoadingScreen = isInitialLoad && hasResolvedSettings && isEnabled;
 
-  const animationConfigs: Record<string, any> = {
-    none: { initial: {}, animate: {}, transition: {} },
-    fade: { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.8 } },
-    slide: { initial: { opacity: 0, y: 40 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.8, ease: "easeOut" } },
-    bounce: { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: 1, scale: 1 }, transition: { type: "spring", stiffness: 100, damping: 10 } },
-    zoom: { initial: { opacity: 0, scale: 1.1 }, animate: { opacity: 1, scale: 1 }, transition: { duration: 0.8 } },
-  };
-
-  const currentAnim = animationConfigs[globalSettings?.siteAnimation || 'fade'] || animationConfigs.fade;
-
   return (
     <>
       {isMaintenanceActive ? (
@@ -130,14 +119,10 @@ export function RootContent({ children }: { children: React.ReactNode }) {
           onFinished={() => setIsInitialLoad(false)} 
         />
       )}
-      <motion.div 
-        key={globalSettings?.siteAnimation || 'default'}
-        {...currentAnim}
-        className={showLoadingScreen || isMaintenanceActive ? 'hidden' : 'block min-h-screen'}
-      >
+      <div className={showLoadingScreen || isMaintenanceActive ? 'hidden' : 'block'}>
         {children}
         <AudioLobby />
-      </motion.div>
+      </div>
     </>
   );
 }

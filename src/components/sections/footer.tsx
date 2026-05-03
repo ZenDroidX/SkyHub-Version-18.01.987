@@ -68,7 +68,7 @@ export function Footer() {
         </Card>
 
         <div className="mt-24 text-center space-y-4 opacity-40">
-          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground">Sky Hub Ecosystem (c) 2025</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground">Sky Hub Ecosystem © 2025</p>
           <div className="flex gap-6 justify-center text-[8px] font-black uppercase tracking-widest text-muted-foreground">
             <span className="hover:text-white cursor-pointer transition-colors">Security Protocol</span>
             <span className="hover:text-white cursor-pointer transition-colors">API Endpoint</span>

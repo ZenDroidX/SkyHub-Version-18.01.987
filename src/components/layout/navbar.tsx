@@ -159,7 +159,7 @@ export function Navbar() {
       <nav className="hidden md:flex items-center gap-1.5 glass-pill px-2 py-1.5 rounded-full pointer-events-auto border border-border shadow-2xl">
         <Link href="/" className="ml-4 mr-2 flex items-center">
           {logoUrl ? (
-            <img src={logoUrl} className="h-10 w-auto object-contain py-1" alt="Logo" />
+            <img src={logoUrl || undefined} className="h-10 w-auto object-contain py-1" alt="Logo" />
           ) : (
             <span className="font-black text-sm uppercase tracking-tighter">{brandName}</span>
           )}
@@ -271,7 +271,7 @@ export function Navbar() {
         <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
           <Link href="/" className="flex items-center">
             {logoUrl ? (
-              <img src={logoUrl} className="h-10 w-auto object-contain py-1" alt="Logo" />
+              <img src={logoUrl || undefined} className="h-10 w-auto object-contain py-1" alt="Logo" />
             ) : (
               <span className="font-black text-xl uppercase tracking-tighter">{brandName}</span>
             )}
@@ -480,7 +480,7 @@ export function Navbar() {
           </DialogHeader>
           
           <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            <img src={qrLink} alt="Payment QR" className="w-full h-full object-contain" />
+            <img src={qrLink || undefined} alt="Payment QR" className="w-full h-full object-contain" />
           </div>
 
           <div className="w-full space-y-4">
