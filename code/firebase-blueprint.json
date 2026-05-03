@@ -1,0 +1,201 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user in the Skyhub platform.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique Firebase Auth UID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "The user's profile picture URL."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["super_admin", "admin", "developer", "user"],
+          "description": "The user's role in the system."
+        },
+        "permissions": {
+          "type": "object",
+          "description": "Specific rights granted to the user.",
+          "properties": {
+            "canPromoteToAdmin": { "type": "boolean" },
+            "canPromoteToDeveloper": { "type": "boolean" },
+            "canManageUsers": { "type": "boolean" }
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user account was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user account was last updated."
+        }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "SiteSettings": {
+      "title": "Site Settings",
+      "description": "Global configuration for the Skyhub platform.",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string" },
+        "maintenanceMode": { "type": "boolean" },
+        "maintenanceMessage": { "type": "string" },
+        "maintenanceEndTime": { "type": "string", "format": "date-time" },
+        "welcomeMessage": { "type": "string" },
+        "heroTitle": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "donorShowcase": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "speed": { "type": "number" },
+            "pauseOnHover": { "type": "boolean" },
+            "style": { "type": "string", "enum": ["glassmorphism", "neon", "classic", "minimal"] },
+            "showParticles": { "type": "boolean" }
+          }
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "description": { "type": "string" },
+              "icon": { "type": "string" }
+            }
+          }
+        },
+        "slideshowImages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": { "type": "string" },
+              "orientation": { "type": "string" },
+              "size": { "type": "string" }
+            }
+          }
+        },
+        "supportLinks": {
+          "type": "object",
+          "properties": {
+            "paymentLink": { "type": "string" },
+            "qrLink": { "type": "string" }
+          }
+        },
+        "socialLinks": {
+          "type": "object",
+          "properties": {
+            "telegramChannel": { "type": "string" },
+            "discussion": { "type": "string" }
+          }
+        },
+        "notifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "message": { "type": "string" },
+              "scheduledTime": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "layoutConfig": {
+          "type": "array",
+          "description": "The layout configuration for the site.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "order": { "type": "number" },
+              "visible": { "type": "boolean" },
+              "columns": { "type": "number" },
+              "gap": { "type": "number" },
+              "padding": { "type": "string" },
+              "margin": { "type": "string" }
+            }
+          }
+        },
+        "updatedBy": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A post fetched from the Telegram channel.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "url": { "type": "string" }
+      },
+      "required": ["content", "date", "url"]
+    },
+    "ActivityLog": {
+      "title": "Activity Log",
+      "description": "Records user actions for auditing.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "action": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "details": { "type": "object" }
+      },
+      "required": ["uid", "action", "timestamp"]
+    },
+    "Donor": {
+      "title": "Donor",
+      "description": "Represents a donor in the showcase.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "username": { "type": "string" },
+        "message": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "visible": { "type": "boolean" },
+        "priority": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "visible"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles."
+    },
+    "/settings/global": {
+      "schema": "SiteSettings",
+      "description": "Global site configuration."
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Collection of Telegram posts."
+    },
+    "/audit_logs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "System activity logs."
+    },
+    "/donors/{donorId}": {
+      "schema": "Donor",
+      "description": "Collection of donors for the showcase."
+    }
+  }
+}

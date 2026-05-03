@@ -1,0 +1,151 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Strict Owners with absolute authority
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email != null && (
+          request.auth.token.email.lower() == 'meinkxun@gmail.com' ||
+          request.auth.token.email.lower() == 'skyhubowner@gmail.com'
+        )) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')
+      );
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        isSuperAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isDeveloper() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+    }
+
+    function hasDevPermission(permissionField) {
+      return isDeveloper() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data[permissionField] == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin(); 
+      allow create: if isSignedIn() && request.auth.uid == userId && !('role' in request.resource.data && request.resource.data.role in ['admin', 'super_admin', 'developer']);
+      allow update: if (isSuperAdmin() || isAdmin() || isOwner(userId)) &&
+                       (!isOwner(userId) || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'canManageRoms', 'canManageModules', 'canManageApks', 'canManageWallpapers', 'canManageGuides']) || isAdmin()) &&
+                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || request.resource.data.role != 'super_admin' || isSuperAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /roms/{romId} {
+      allow read: if true;
+      allow create: if isAdmin() || hasDevPermission('canManageRoms');
+      allow update, delete: if isAdmin() || (isDeveloper() && resource.data.developerId == request.auth.uid && hasDevPermission('canManageRoms'));
+    }
+
+    match /modules/{moduleId} {
+      allow read: if true;
+      allow create: if isAdmin() || hasDevPermission('canManageModules');
+      allow update, delete: if isAdmin() || (isDeveloper() && resource.data.developerId == request.auth.uid && hasDevPermission('canManageModules'));
+    }
+
+    match /mod-apks/{apkId} {
+      allow read: if true;
+      allow create: if isAdmin() || hasDevPermission('canManageApks');
+      allow update, delete: if isAdmin() || (isDeveloper() && resource.data.developerId == request.auth.uid && hasDevPermission('canManageApks'));
+    }
+
+    match /wallpapers/{wallpaperId} {
+      allow read: if true;
+      allow create: if isAdmin() || hasDevPermission('canManageWallpapers');
+      allow update, delete: if isAdmin() || (isDeveloper() && resource.data.developerId == request.auth.uid && hasDevPermission('canManageWallpapers'));
+    }
+
+    match /live-wallpapers/{wallpaperId} {
+      allow read: if true;
+      allow create: if isAdmin() || hasDevPermission('canManageWallpapers');
+      allow update, delete: if isAdmin() || (isDeveloper() && resource.data.developerId == request.auth.uid && hasDevPermission('canManageWallpapers'));
+    }
+
+    match /tutorials/{tutorialId} {
+      allow read: if true;
+      allow create: if isAdmin() || hasDevPermission('canManageGuides');
+      allow update, delete: if isAdmin() || (isDeveloper() && resource.data.developerId == request.auth.uid && hasDevPermission('canManageGuides'));
+    }
+
+    match /root-packages/{packageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /donation/{settingsDoc} {
+      allow read: if true;
+      allow update, write: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /navigation-links/{linkId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /custom-resources/{resourceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /posts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /donors/{donorId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /userActivity/{activityId} {
+      allow read, list: if isAdmin();
+      allow create: if isSignedIn();
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isSignedIn();
+    }
+
+    // OTP Codes: Allow server actions to write and client to read for verification
+    match /otp_codes/{email} {
+      allow read, write: if true;
+    }
+
+    // Connectivity Test Node
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}
