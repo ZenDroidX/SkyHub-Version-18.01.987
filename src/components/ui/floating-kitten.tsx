@@ -8,13 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 export function FloatingKitten() {
   const db = useFirestore();
-  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'global') : null, [db]);
-  const { data: settings } = useDoc<SiteSettings>(settingsRef);
-  
+  const { data: rawSettings } = useDoc(doc(db, 'settings', 'global'));
+  const settings = (rawSettings as SiteSettings) || null;
   const kittenConfig = settings?.kittenConfig || {
-    enabled: false,
-    imageUrl: 'https://media.giphy.com/media/VbnUQpnihPSIgIXuZv/giphy.gif', // placeholder cute kitten
-    speed: 2,
+    enabled: true,
+    imageUrl: 'https://media.giphy.com/media/VbnUQpnihPSIgIXuZv/giphy.gif',
     size: 100
   };
 
@@ -24,10 +22,6 @@ export function FloatingKitten() {
 
   const handleKittenClick = () => {
     setIsOpen(true);
-    const upiLink = settings?.supportLinks?.paymentLink || DEFAULT_DONATION_CONFIG.paymentLink;
-    if (upiLink) {
-        window.location.href = upiLink;
-    }
   };
 
   const qrUrl = settings?.supportLinks?.qrLink || settings?.qrImageUrl || DEFAULT_DONATION_CONFIG.qrImageUrl;
@@ -50,18 +44,18 @@ export function FloatingKitten() {
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[400px] glass border-white/10 rounded-[2rem] overflow-hidden p-8 shadow-2xl z-[100]">
+        <DialogContent className="sm:max-w-[400px] border-white/20 rounded-[2.5rem] overflow-hidden p-8 shadow-[inset_0_0_20px_rgba(255,255,255,0.2),_0_20px_50px_rgba(0,0,0,0.5)] z-[100] backdrop-blur-[40px] bg-white/5 dark:bg-black/20 before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-white/20 before:via-transparent before:to-black/30">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-center">Support Us!</DialogTitle>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-center bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">Support Us!</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center gap-6 mt-4">
+          <div className="flex flex-col items-center gap-6 mt-4 relative z-10">
              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">
-                Scan QR or wait to be redirected to your UPI app.
+                Scan QR using your UPI app.
              </p>
-             <div className="bg-white p-4 rounded-xl shadow-inner w-48 h-48 border border-white/20">
-               {qrUrl ? <img src={qrUrl} alt="UPI QR" className="w-full h-full object-cover" /> : null}
+             <div className="bg-white p-4 rounded-3xl shadow-[0_0_20px_rgba(255,255,255,0.5)] w-48 h-48 border border-white/40 transform hover:scale-105 transition-transform duration-300">
+               {qrUrl ? <img src={qrUrl} alt="UPI QR" className="w-full h-full object-cover rounded-xl" /> : null}
              </div>
-             <p className="text-xs font-black uppercase tracking-widest bg-primary/20 text-primary py-2 px-4 rounded-full">
+             <p className="text-xs font-black uppercase tracking-widest bg-primary/20 backdrop-blur-md text-primary py-3 px-6 rounded-full border border-primary/30 shadow-[0_0_15px_rgba(var(--primary),0.3)]">
                 {settings?.upiId || DEFAULT_DONATION_CONFIG.upiId}
              </p>
           </div>
