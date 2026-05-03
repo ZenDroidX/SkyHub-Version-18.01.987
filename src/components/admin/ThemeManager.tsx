@@ -135,15 +135,15 @@ export default function ThemeManager() {
             <div className="space-y-2">
               <Label>Primary Color</Label>
               <div className="flex gap-2">
-                <Input type="color" value={customPrimary || ''} onChange={(e) => setCustomPrimary(e.target.value)} className="w-12 h-12 p-1" />
-                <Input type="text" value={customPrimary || ''} onChange={(e) => setCustomPrimary(e.target.value)} className="flex-1" />
+                <Input type="color" value={customPrimary} onChange={(e) => setCustomPrimary(e.target.value)} className="w-12 h-12 p-1" />
+                <Input type="text" value={customPrimary} onChange={(e) => setCustomPrimary(e.target.value)} className="flex-1" />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Text Color</Label>
               <div className="flex gap-2">
-                <Input type="color" value={customTextColor || ''} onChange={(e) => setCustomTextColor(e.target.value)} className="w-12 h-12 p-1" />
-                <Input type="text" value={customTextColor || ''} onChange={(e) => setCustomTextColor(e.target.value)} className="flex-1" />
+                <Input type="color" value={customTextColor} onChange={(e) => setCustomTextColor(e.target.value)} className="w-12 h-12 p-1" />
+                <Input type="text" value={customTextColor} onChange={(e) => setCustomTextColor(e.target.value)} className="flex-1" />
               </div>
             </div>
             <div className="space-y-2">
@@ -178,8 +178,8 @@ export default function ThemeManager() {
             <div className="space-y-2">
               <Label>Background Color</Label>
               <div className="flex gap-2">
-                <Input type="color" value={customBg || ''} onChange={(e) => setCustomBg(e.target.value)} className="w-12 h-12 p-1" />
-                <Input type="text" value={customBg || ''} onChange={(e) => setCustomBg(e.target.value)} className="flex-1" />
+                <Input type="color" value={customBg} onChange={(e) => setCustomBg(e.target.value)} className="w-12 h-12 p-1" />
+                <Input type="text" value={customBg} onChange={(e) => setCustomBg(e.target.value)} className="flex-1" />
               </div>
             </div>
             <div className="space-y-2">

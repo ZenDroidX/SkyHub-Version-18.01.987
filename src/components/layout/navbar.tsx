@@ -190,7 +190,7 @@ export function Navbar() {
           <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground" />
           <Input 
             placeholder="Search..." 
-            value={searchQuery || ''}
+            value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {

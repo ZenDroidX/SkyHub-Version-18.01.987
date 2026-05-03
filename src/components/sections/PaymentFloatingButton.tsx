@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Cat, X, ExternalLink, QrCode, CreditCard } from 'lucide-react';
+import { Heart, X, ExternalLink, QrCode, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SiteSettings, DEFAULT_DONATION_CONFIG } from '@/lib/store';
@@ -48,10 +48,10 @@ export function PaymentFloatingButton({ settings }: PaymentFloatingButtonProps) 
                 <div className="text-center space-y-6">
                   <div className="space-y-2">
                     <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-primary/10 text-primary mb-2">
-                      <Cat className="w-8 h-8" />
+                      <Heart className="w-6 h-6 fill-current" />
                     </div>
-                    <h3 className="text-2xl font-black uppercase tracking-tighter italic">Feed the <span className="text-primary underline decoration-2 underline-offset-4">Kitten</span></h3>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Help the nodes survive another day</p>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter italic">Support the <span className="text-primary underline decoration-2 underline-offset-4">Protocol</span></h3>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Contribute to the survival of the registry</p>
                   </div>
 
                   {qrImageUrl && (
@@ -117,7 +117,7 @@ export function PaymentFloatingButton({ settings }: PaymentFloatingButtonProps) 
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3 }}
         >
-          {isOpen ? <X className="w-6 h-6" /> : <Cat className="w-6 h-6 animate-bounce" />}
+          {isOpen ? <X className="w-6 h-6" /> : <Heart className="w-6 h-6 fill-current animate-pulse" />}
         </motion.div>
         {!isOpen && (
           <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping" />

@@ -954,7 +954,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <Label className="text-[10px] font-black uppercase tracking-widest">Display Name</Label>
                   <Input 
-                    value={editUsername || ''} 
+                    value={editUsername} 
                     onChange={(e) => setEditUsername(e.target.value)} 
                     className="h-14 rounded-2xl bg-black/40 border-border" 
                     placeholder="Enter your display name"
@@ -963,7 +963,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <Label className="text-[10px] font-black uppercase tracking-widest">Profile Image URL</Label>
                   <Input 
-                    value={editProfileImage || ''} 
+                    value={editProfileImage} 
                     onChange={(e) => setEditProfileImage(e.target.value)} 
                     className="h-14 rounded-2xl bg-black/40 border-border" 
                     placeholder="Enter profile image URL"
@@ -1064,7 +1064,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Site Name (Browser Title)</Label>
                     <Input 
-                      value={siteName || ''} 
+                      value={siteName} 
                       onChange={(e) => setSiteName(e.target.value)} 
                       className="h-14 rounded-2xl bg-black/40 border-border" 
                       placeholder="e.g. SkyHub Protocol"
@@ -1073,7 +1073,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Brand Name (Navbar)</Label>
                     <Input 
-                      value={brandName || ''} 
+                      value={brandName} 
                       onChange={(e) => setBrandName(e.target.value)} 
                       className="h-14 rounded-2xl bg-black/40 border-border" 
                       placeholder="e.g. SKYHUB"
@@ -1082,7 +1082,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Favicon URL</Label>
                     <Input 
-                      value={faviconUrl || ''} 
+                      value={faviconUrl} 
                       onChange={(e) => setFaviconUrl(e.target.value)}
                       className="h-14 rounded-2xl bg-black/40 border-border" 
                       placeholder="Enter favicon URL"
@@ -1091,7 +1091,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Hero Title</Label>
                     <Textarea 
-                      value={heroTitle || ''} 
+                      value={heroTitle} 
                       onChange={(e) => setHeroTitle(e.target.value)}
                       className="h-24 rounded-2xl bg-black/40 border-border" 
                       placeholder="Enter hero title (use \n for line breaks)"
@@ -1100,7 +1100,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Hero Subtitle</Label>
                     <Textarea 
-                      value={heroSubtitle || ''} 
+                      value={heroSubtitle} 
                       onChange={(e) => setHeroSubtitle(e.target.value)}
                       className="h-32 rounded-2xl bg-black/40 border-border" 
                       placeholder="Enter hero subtitle"
@@ -1109,7 +1109,7 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest">ROM Request Form Link</Label>
                     <Input 
-                      value={romRequestFormUrl || ''} 
+                      value={romRequestFormUrl} 
                       onChange={(e) => setRomRequestFormUrl(e.target.value)}
                       className="h-14 rounded-2xl bg-black/40 border-border" 
                       placeholder="e.g. https://formspree.io/f/your_id"
@@ -1144,11 +1144,11 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest">Color 1</Label>
-                      <Input type="color" value={gradientColors.color1 || ''} onChange={(e) => setGradientColors({...gradientColors, color1: e.target.value})} className="h-10 w-full" />
+                      <Input type="color" value={gradientColors.color1} onChange={(e) => setGradientColors({...gradientColors, color1: e.target.value})} className="h-10 w-full" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest">Color 2</Label>
-                      <Input type="color" value={gradientColors.color2 || ''} onChange={(e) => setGradientColors({...gradientColors, color2: e.target.value})} className="h-10 w-full" />
+                      <Input type="color" value={gradientColors.color2} onChange={(e) => setGradientColors({...gradientColors, color2: e.target.value})} className="h-10 w-full" />
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -1743,7 +1743,7 @@ export default function DashboardPage() {
                     <Input 
                       placeholder="Neural scan..." 
                       className="h-12 w-full md:w-64 bg-muted/50 rounded-2xl pl-12 border-border focus:ring-primary/20 font-black text-[10px] uppercase"
-                      value={searchQuery || ''}
+                      value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
@@ -1940,7 +1940,7 @@ export default function DashboardPage() {
               <TabsTrigger value="bulk" className="text-[9px] uppercase font-black">Bulk Add</TabsTrigger>
             </TabsList>
             <TabsContent value="telegram" className="space-y-6">
-              <Textarea value={bulkTelegramText || ''} onChange={(e) => setBulkTelegramText(e.target.value)} placeholder="PASTE TELEGRAM BROADCAST CONTENT..." className="bg-muted min-h-[250px] rounded-2xl p-6 text-[10px] font-code" />
+              <Textarea value={bulkTelegramText} onChange={(e) => setBulkTelegramText(e.target.value)} placeholder="PASTE TELEGRAM BROADCAST CONTENT..." className="bg-muted min-h-[250px] rounded-2xl p-6 text-[10px] font-code" />
               <Button onClick={handleBulkExtract} disabled={isExtracting} className="w-full h-12 bg-blue-600 text-white uppercase text-[10px] font-black tracking-widest rounded-xl">
                 {isExtracting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Analyze Transmission'}
               </Button>
@@ -2013,7 +2013,7 @@ export default function DashboardPage() {
               )}
             </TabsContent>
             <TabsContent value="links" className="space-y-6">
-              <Textarea value={bulkLinksText || ''} onChange={(e) => setBulkLinksText(e.target.value)} placeholder="PASTE ONE LINK PER LINE FOR AUTO-SCANNING..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
+              <Textarea value={bulkLinksText} onChange={(e) => setBulkLinksText(e.target.value)} placeholder="PASTE ONE LINK PER LINE FOR AUTO-SCANNING..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
               <Button onClick={handleBulkLinkSync} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Initialize Link Sync Series</Button>
             </TabsContent>
             <TabsContent value="file" className="space-y-6">
@@ -2105,7 +2105,7 @@ export default function DashboardPage() {
               )}
             </TabsContent>
             <TabsContent value="bulk" className="space-y-6">
-              <Textarea value={bulkAddLinks || ''} onChange={(e) => setBulkAddLinks(e.target.value)} placeholder="PASTE IMAGE LINKS (ONE PER LINE)..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
+              <Textarea value={bulkAddLinks} onChange={(e) => setBulkAddLinks(e.target.value)} placeholder="PASTE IMAGE LINKS (ONE PER LINE)..." className="bg-muted min-h-[300px] rounded-2xl p-6 text-[10px] font-code" />
               <Button onClick={handleBulkAdd} disabled={isAdding} className="w-full h-14 bg-primary uppercase text-[10px] font-black tracking-widest rounded-2xl">Add to {menuItems.find(i => i.id === activeTab)?.label}</Button>
             </TabsContent>
           </Tabs>

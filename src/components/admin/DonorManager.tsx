@@ -236,19 +236,19 @@ export default function DonorManager() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Donor Name</Label>
-                    <Input value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. John Doe" className="bg-background" />
+                    <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. John Doe" className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Username / Handle</Label>
-                    <Input value={formData.username || ''} onChange={(e) => setFormData({...formData, username: e.target.value})} placeholder="e.g. johndoe" className="bg-background" />
+                    <Input value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} placeholder="e.g. johndoe" className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Message</Label>
-                    <Input value={formData.message || ''} onChange={(e) => setFormData({...formData, message: e.target.value})} placeholder="e.g. Keep up the great work!" className="bg-background" />
+                    <Input value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} placeholder="e.g. Keep up the great work!" className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest">Donation Amount</Label>
-                    <Input value={formData.amount || ''} onChange={(e) => setFormData({...formData, amount: e.target.value})} placeholder="e.g. $50" className="bg-background" />
+                    <Input value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} placeholder="e.g. $50" className="bg-background" />
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -259,7 +259,7 @@ export default function DonorManager() {
                         {formData.avatarUrl ? <img src={resolveImageUrl(formData.avatarUrl)} alt="Preview" className="w-full h-full object-cover" /> : <User className="w-full h-full p-4 opacity-20" />}
                       </div>
                       <div className="flex-1 space-y-2">
-                        <Input value={formData.avatarUrl || ''} onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})} placeholder="Image URL (Google Drive / Direct)" className="bg-background text-xs" />
+                        <Input value={formData.avatarUrl} onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})} placeholder="Image URL (Google Drive / Direct)" className="bg-background text-xs" />
                         <p className="text-[8px] text-muted-foreground">For Google Photos: Open image, right click &quot;Copy Image Address&quot;</p>
                         <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border cursor-pointer hover:bg-muted transition-colors">
                           <Upload className="w-4 h-4" />

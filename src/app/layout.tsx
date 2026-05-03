@@ -27,46 +27,21 @@ const sourceCodePro = Source_Code_Pro({
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    // Priority 1: Use Environment Variables
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    const databaseId = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID;
+    const config = require('../../firebase-applet-config.json');
+    const projectId = config.projectId;
+    const databaseId = config.firestoreDatabaseId;
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${databaseId}/documents/settings/global`;
     
-    // Fallback: Fallback to local config if env vars are missing (for local dev/AI Studio)
-    let finalProjectId = projectId;
-    let finalDatabaseId = databaseId;
-    
-    if (!finalProjectId || !finalDatabaseId) {
-      try {
-        const config = require('../../firebase-applet-config.json');
-        finalProjectId = finalProjectId || config.projectId;
-        finalDatabaseId = finalDatabaseId || config.firestoreDatabaseId;
-      } catch (e) {
-        // No local config file
-      }
-    }
-
-    if (!finalProjectId) throw new Error('No Firebase project ID found');
-
-    const url = `https://firestore.googleapis.com/v1/projects/${finalProjectId}/databases/${finalDatabaseId || '(default)'}/documents/settings/global`;
-    
-    const res = await fetch(url, { next: { revalidate: 3600 } }); // Revalidate every hour for SEO performance
+    const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) throw new Error('Failed to fetch settings');
     
     const data = await res.json();
-    const fields = data.fields;
-    const seo = fields?.seo?.mapValue?.fields;
-    const faviconUrl = fields?.faviconUrl?.stringValue;
-    const siteName = fields?.siteName?.stringValue;
+    const seo = data.fields?.seo?.mapValue?.fields;
     
     return {
-      title: seo?.title?.stringValue || siteName || "Skyhub - Professional Hub",
+      title: seo?.title?.stringValue || "Skyhub - Professional Hub",
       description: seo?.description?.stringValue || "Custom ROMs, Modules and System Modifications.",
       keywords: seo?.keywords?.stringValue || "android, roms, custom, modules",
-      icons: {
-        icon: faviconUrl || '/favicon.ico',
-        shortcut: faviconUrl || '/favicon.ico',
-        apple: faviconUrl || '/apple-touch-icon.png',
-      },
       openGraph: {
         images: [seo?.ogImage?.stringValue || "/og-image.png"],
       }
