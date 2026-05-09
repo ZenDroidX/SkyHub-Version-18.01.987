@@ -174,9 +174,31 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "visible"]
+    },
+    "CustomRecovery": {
+      "title": "Custom Recovery",
+      "description": "Represents a custom recovery like TWRP or OrangeFox.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "downloadUrl": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "screenshots": { "type": "array", "items": { "type": "string" } },
+        "developer": { "type": "string" },
+        "androidVersion": { "type": "string" },
+        "category": { "type": "string" },
+        "downloadCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
     }
   },
   "firestore": {
+    "/recoveries/{recoveryId}": {
+      "schema": "CustomRecovery",
+      "description": "Collection of Custom Recoveries."
+    },
     "/users/{userId}": {
       "schema": "User",
       "description": "Collection of user profiles."

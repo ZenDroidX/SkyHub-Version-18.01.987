@@ -4,7 +4,7 @@
 import { Navbar } from '@/components/layout/navbar';
 import { Hero } from '@/components/sections/hero';
 import { DonorShowcase } from '@/components/sections/DonorShowcase';
-import { ROMGrid, ModuleGrid, GuideGrid, RequestROM, RootGrid, ModApkGrid, CustomGrid, LiveWallpaperGrid } from '@/components/sections/content-grid';
+import { ROMGrid, ModuleGrid, GuideGrid, RequestROM, RootGrid, ModApkGrid, RecoveryGrid, CustomGrid, LiveWallpaperGrid } from '@/components/sections/content-grid';
 import { Wallpapers } from '@/components/sections/wallpapers';
 import { Slideshow } from '@/components/sections/slideshow';
 import { Footer } from '@/components/sections/footer';
@@ -27,6 +27,7 @@ export default function Home() {
   const db = useFirestore();
 
   const romsQuery = useMemoFirebase(() => query(collection(db, 'roms'), orderBy('createdAt', 'desc')), [db]);
+  const recoveriesQuery = useMemoFirebase(() => query(collection(db, 'recoveries'), orderBy('createdAt', 'desc')), [db]);
   const modulesQuery = useMemoFirebase(() => query(collection(db, 'modules'), orderBy('createdAt', 'desc')), [db]);
   const apksQuery = useMemoFirebase(() => query(collection(db, 'mod-apks'), orderBy('createdAt', 'desc')), [db]);
   const wallpapersQuery = useMemoFirebase(() => query(collection(db, 'wallpapers'), orderBy('createdAt', 'desc')), [db]);
@@ -38,6 +39,7 @@ export default function Home() {
   const globalSettingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
 
   const { data: roms, isLoading: romsLoading } = useCollection(romsQuery);
+  const { data: recoveries, isLoading: recoveriesLoading } = useCollection(recoveriesQuery);
   const { data: modules, isLoading: modulesLoading } = useCollection(modulesQuery);
   const { data: apks, isLoading: apksLoading } = useCollection(apksQuery);
   const { data: wallpapers, isLoading: wallpapersLoading } = useCollection(wallpapersQuery);
@@ -53,6 +55,7 @@ export default function Home() {
     { id: 'hero', order: 1, visible: true },
     { id: 'donors', order: 1.5, visible: true },
     { id: 'roms', order: 2, visible: true, columns: 3, gap: 4 },
+    { id: 'recoveries', order: 2.5, visible: true, columns: 3, gap: 4 },
     { id: 'modules', order: 3, visible: true, columns: 3, gap: 4 },
     { id: 'apks', order: 4, visible: true, columns: 3, gap: 4 },
     { id: 'root', order: 5, visible: true, columns: 3, gap: 4 },
@@ -82,6 +85,7 @@ export default function Home() {
       case 'hero': return <Hero />;
       case 'donors': return <DonorShowcase />;
       case 'roms': return <ROMGrid roms={roms || []} isLoading={romsLoading} />;
+      case 'recoveries': return <RecoveryGrid recoveries={recoveries || []} isLoading={recoveriesLoading} />;
       case 'modules': return <ModuleGrid modules={modules || []} isLoading={modulesLoading} />;
       case 'apks': return <ModApkGrid apks={apks || []} isLoading={apksLoading} />;
       case 'root': return <RootGrid packages={rootPackages || []} isLoading={rootLoading} />;

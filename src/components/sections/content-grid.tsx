@@ -415,6 +415,59 @@ export function ModApkGrid({ apks, isLoading }: { apks: any[], isLoading: boolea
   );
 }
 
+function RecoveryCard({ recovery }: { recovery: any }) {
+  const db = useFirestore();
+  const { auth } = initializeFirebase();
+  const [isExpanded, setIsExpanded] = useState(false);
+  return (
+    <motion.div variants={cardVariants} whileHover={{ y: -5 }}>
+      <Card className="glass border-border p-0 rounded-[3rem] overflow-hidden flex flex-col h-full transition-all">
+        <div className="p-6">
+          <div className="relative aspect-video w-full bg-muted/20 flex items-center justify-center rounded-[2.5rem] overflow-hidden border border-border/10 p-10 text-center">
+            {recovery.imageUrl ? (
+              <img src={recovery.imageUrl} alt={recovery.name} className="max-w-full max-h-full object-contain drop-shadow-2xl" />
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <ShieldAlert className="w-8 h-8 text-muted-foreground/30" />
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 leading-tight">
+                  No visual preview available
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="px-8 pb-8 flex flex-col flex-1">
+          <h3 className="text-lg font-black uppercase tracking-tight text-foreground mb-4 truncate">{recovery.name}</h3>
+          <div className={cn("text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap", !isExpanded ? "line-clamp-2 mb-6" : "mb-6")}>{parseLinks(recovery.description)}</div>
+          <div className="text-[9px] font-black uppercase text-muted-foreground mb-4">{recovery.downloadCount || 0} DOWNLOADS</div>
+          <div className="mt-auto flex gap-3">
+            <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
+              <Button onClick={() => initiateDownload(db, auth, 'recoveries', recovery.id, recovery.downloadUrl, recovery.downloadFileName || recovery.name)} className="w-full h-12 rounded-2xl bg-primary font-black uppercase text-[10px]">Download</Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.95 }}>
+              <Button variant="outline" onClick={() => setIsExpanded(!isExpanded)} className={cn("w-12 h-12 rounded-2xl", isExpanded && "bg-primary text-white")}>
+                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+              </Button>
+            </motion.div>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
+  );
+}
+
+export function RecoveryGrid({ recoveries, isLoading }: { recoveries: any[], isLoading: boolean }) {
+  if (isLoading) return <LoadingState label="Scanning Recovery Registry..." />;
+  return (
+    <section id="recoveries" className="py-32 max-w-7xl mx-auto px-6">
+      <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-20">CUSTOM <span className="text-orange-500">RECOVERY</span></h2>
+      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.05 }}>
+        {recoveries.map((recovery) => <RecoveryCard key={recovery.id} recovery={recovery} />)}
+      </motion.div>
+    </section>
+  );
+}
+
 export function RootGrid({ packages, isLoading }: { packages: any[], isLoading: boolean }) {
   const db = useFirestore();
   const { auth } = initializeFirebase();

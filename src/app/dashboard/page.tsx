@@ -54,7 +54,8 @@ import {
   Bot,
   Upload,
   Image as LucideImage,
-  Info
+  Info,
+  Archive
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -304,6 +305,7 @@ export default function DashboardPage() {
     { id: 'themes', label: 'Themes', icon: <Palette className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'layout', label: 'Site Layout', icon: <Settings2 className="w-4 h-4" />, permission: 'superAdminOnly' },
     { id: 'roms', label: 'Custom ROMs', icon: <Package className="w-4 h-4" />, permission: 'canManageRoms' },
+    { id: 'recoveries', label: 'Recoveries', icon: <Archive className="w-4 h-4" />, permission: 'canManageRoms' },
     { id: 'modules', label: 'Modules', icon: <Smartphone className="w-4 h-4" />, permission: 'canManageModules' },
     { id: 'mod-apks', label: 'Mod APKs', icon: <ShieldAlert className="w-4 h-4" />, permission: 'canManageApks' },
     { id: 'guides', label: 'Protocols', icon: <FileText className="w-4 h-4" />, permission: 'canManageGuides' },
@@ -336,6 +338,7 @@ export default function DashboardPage() {
   }, [menuItems, activeTab]);
 
   const romsQuery = useMemoFirebase(() => query(collection(db, 'roms'), orderBy('createdAt', 'desc')), [db]);
+  const recoveriesQuery = useMemoFirebase(() => query(collection(db, 'recoveries'), orderBy('createdAt', 'desc')), [db]);
   const modulesQuery = useMemoFirebase(() => query(collection(db, 'modules'), orderBy('createdAt', 'desc')), [db]);
   const apksQuery = useMemoFirebase(() => query(collection(db, 'mod-apks'), orderBy('createdAt', 'desc')), [db]);
   const usersQuery = useMemoFirebase(() => (isSuperAdmin || isAdminRole) ? query(collection(db, 'users'), orderBy('createdAt', 'desc')) : null, [db, isSuperAdmin, isAdminRole]);
@@ -346,6 +349,7 @@ export default function DashboardPage() {
   const auditLogsQuery = useMemoFirebase(() => isSuperAdmin ? query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc')) : null, [db, isSuperAdmin]);
 
   const { data: roms } = useCollection(romsQuery);
+  const { data: recoveries } = useCollection(recoveriesQuery);
   const { data: modules } = useCollection(modulesQuery);
   const { data: apks } = useCollection(apksQuery);
   const { data: users } = useCollection(usersQuery);
@@ -760,6 +764,7 @@ export default function DashboardPage() {
   const getActiveCollectionData = () => {
     switch(activeTab) {
       case 'roms': return roms;
+      case 'recoveries': return recoveries;
       case 'modules': return modules;
       case 'mod-apks': return apks;
       case 'wallpapers': return wallpapers;
@@ -1852,10 +1857,10 @@ export default function DashboardPage() {
                 <Input name="developerCredit" placeholder="E.g. Developer Name" className="bg-muted rounded-xl h-12" />
               </div>
               
-              {activeTab === 'roms' && (
-                <div className="space-y-2">
+              {(activeTab === 'roms' || activeTab === 'recoveries') && (
+                <div className="space-y-4">
                   <Label className="text-[9px] font-black uppercase ml-1">Android Version</Label>
-                  <Input name="androidVersion" placeholder="E.g. 15" className="bg-muted rounded-xl h-12" />
+                  <Input name="androidVersion" placeholder="e.g. 14" className="bg-muted rounded-xl h-12" />
                 </div>
               )}
 
@@ -1878,7 +1883,7 @@ export default function DashboardPage() {
                 <Input name="imageUrl" placeholder="HTTPS Asset Link" className="bg-muted rounded-xl h-12" />
               </div>
 
-              {(activeTab === 'roms' || activeTab === 'wallpapers' || activeTab === 'live-wallpapers') && (
+              {(activeTab === 'roms' || activeTab === 'wallpapers' || activeTab === 'live-wallpapers' || activeTab === 'recoveries') && (
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase ml-1">Category / Tag</Label>
                   <Input name="category" placeholder="E.g. AOSP, Nature, 60fps" className="bg-muted rounded-xl h-12" />
@@ -1891,7 +1896,7 @@ export default function DashboardPage() {
               <Textarea name={activeTab === 'guides' ? 'content' : 'description'} required className="bg-muted min-h-[150px] rounded-2xl" />
             </div>
 
-            {activeTab === 'roms' && (
+            {(activeTab === 'roms' || activeTab === 'recoveries') && (
               <div className="space-y-2">
                 <Label className="text-[9px] font-black uppercase ml-1">System Screenshots (One URL per line)</Label>
                 <Textarea name="screenshots" placeholder="Mirror URL 1\nMirror URL 2" className="bg-muted min-h-[100px] rounded-2xl" />
@@ -2126,7 +2131,7 @@ export default function DashboardPage() {
                 <Input name="developerCredit" defaultValue={editingItem?.developerCredit} placeholder="E.g. Developer Name" className="bg-muted rounded-xl h-12" />
               </div>
               
-              {activeTab === 'roms' && (
+              {(activeTab === 'roms' || activeTab === 'recoveries') && (
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase ml-1">Android Version</Label>
                   <Input name="androidVersion" defaultValue={editingItem?.androidVersion} placeholder="E.g. 15" className="bg-muted rounded-xl h-12" />
@@ -2152,7 +2157,7 @@ export default function DashboardPage() {
                 <Input name="imageUrl" defaultValue={editingItem?.imageUrl} placeholder="HTTPS Asset Link" className="bg-muted rounded-xl h-12" />
               </div>
 
-              {(activeTab === 'roms' || activeTab === 'wallpapers' || activeTab === 'live-wallpapers') && (
+              {(activeTab === 'roms' || activeTab === 'wallpapers' || activeTab === 'live-wallpapers' || activeTab === 'recoveries') && (
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase ml-1">Category / Tag</Label>
                   <Input name="category" defaultValue={editingItem?.category} placeholder="E.g. AOSP, Nature, 60fps" className="bg-muted rounded-xl h-12" />
@@ -2165,7 +2170,7 @@ export default function DashboardPage() {
               <Textarea name={activeTab === 'guides' ? 'content' : 'description'} defaultValue={editingItem?.description || editingItem?.content} required className="bg-muted min-h-[150px] rounded-2xl" />
             </div>
 
-            {activeTab === 'roms' && (
+            {(activeTab === 'roms' || activeTab === 'recoveries') && (
               <div className="space-y-2">
                 <Label className="text-[9px] font-black uppercase ml-1">System Screenshots (One URL per line)</Label>
                 <Textarea name="screenshots" defaultValue={editingItem?.screenshots?.join('\n')} placeholder="Mirror URL 1\nMirror URL 2" className="bg-muted min-h-[100px] rounded-2xl" />
