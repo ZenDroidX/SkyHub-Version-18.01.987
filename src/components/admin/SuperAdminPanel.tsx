@@ -318,7 +318,7 @@ export default function SuperAdminPanel() {
                 </div>
               ))}
               <Button onClick={() => setFormData({...formData, customSections: [...(formData.customSections || []), {title: '', content: '', highlights: []}]})}>Add Custom Section</Button>
-              <Button onClick={handleSave} className="ml-2 cyber-button">Save Changes</Button>
+              <Button onClick={handleSave} className="ml-2">Save Changes</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -347,7 +347,7 @@ export default function SuperAdminPanel() {
                 </div>
               ))}
               <Button onClick={() => setFormData({...formData, highlightedWords: [...(formData.highlightedWords || []), {word: '', color: '#00ffff'}]})}>Add Highlighted Word</Button>
-              <Button onClick={handleSave} className="ml-2 cyber-button">Save Changes</Button>
+              <Button onClick={handleSave} className="ml-2">Save Changes</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -549,7 +549,7 @@ export default function SuperAdminPanel() {
                 </div>
               </div>
 
-              <Button onClick={handleSave} className="mt-4 cyber-button">Save Changes</Button>
+              <Button onClick={handleSave} className="mt-4">Save Changes</Button>
             </CardContent>
           </Card>
         </TabsContent>
