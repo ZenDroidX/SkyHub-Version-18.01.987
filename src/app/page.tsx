@@ -23,6 +23,24 @@ const sectionVariants = {
   }
 };
 
+const highlightWords = (text: string, highlights: any[] = []) => {
+  if (!highlights || highlights.length === 0) return text;
+  let parts: (string | React.ReactNode)[] = [text];
+  highlights.forEach((hw: any) => {
+    if (!hw.word) return;
+    const escapedWord = hw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedWord})`, 'gi');
+    parts = parts.flatMap((p: any, pIdx: number) => {
+      if (typeof p === 'string') {
+        const split = p.split(regex);
+        return split.map((s, i) => i % 2 !== 0 ? <span key={`${hw.word}-${pIdx}-${i}`} style={{ color: hw.color, textShadow: `0 0 10px ${hw.color}80` }}>{s}</span> : s);
+      }
+      return p;
+    });
+  });
+  return parts;
+};
+
 export default function Home() {
   const db = useFirestore();
 
@@ -114,6 +132,16 @@ export default function Home() {
             {sortedLayout.map(section => (
               <motion.div key={section.id} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
                 {renderSection(section)}
+              </motion.div>
+            ))}
+            {globalSettings?.customSections?.map((section: any, idx: number) => (
+              <motion.div key={`custom-${idx}`} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={sectionVariants}>
+                <section className="max-w-7xl mx-auto px-6 py-12">
+                  <h2 className="text-4xl font-black uppercase tracking-tighter mb-8">{highlightWords(section.title, section.highlights || [])}</h2>
+                  <div className="prose prose-invert max-w-none prose-p:text-foreground/80 prose-headings:text-foreground">
+                    <p className="whitespace-pre-line">{highlightWords(section.content, section.highlights || [])}</p>
+                  </div>
+                </section>
               </motion.div>
             ))}
             {contentSections.map((section, idx) => (

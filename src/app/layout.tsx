@@ -7,21 +7,16 @@ import { SearchProvider } from '@/context/SearchContext';
 import { NotificationProvider } from '@/components/NotificationProvider';
 import { RootContent } from '@/components/layout/RootContent';
 
-import { Space_Grotesk, Inter, Source_Code_Pro } from 'next/font/google';
+import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
-  variable: '--font-space-grotesk',
+  variable: '--font-display',
 });
 
-const inter = Inter({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-inter',
-});
-
-const sourceCodePro = Source_Code_Pro({
-  subsets: ['latin'],
-  variable: '--font-mono',
+  variable: '--font-body',
 });
 
 export default function RootLayout({
@@ -30,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${spaceGrotesk.variable} ${inter.variable} ${sourceCodePro.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{

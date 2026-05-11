@@ -63,7 +63,6 @@ export function Navbar() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const userProfileRef = useMemoFirebase(() => 
     (user && db) ? doc(db, 'users', user.uid) : null
   , [db, user]);
@@ -138,13 +137,21 @@ export function Navbar() {
 
   const { searchQuery, setSearchQuery } = useSearch();
 
-  const navLinks = [
+  const defaultNavLinks = [
     { name: 'ROMs', href: '/#roms', icon: <Cpu className="w-3.5 h-3.5" /> },
     { name: 'Modules', href: '/#modules', icon: <Smartphone className="w-3.5 h-3.5" /> },
     { name: 'Mod APKs', href: '/#rooted-apks', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
     { name: 'Wallpapers', href: '/#wallpapers', icon: <ImageIcon className="w-3.5 h-3.5" /> },
     { name: 'Tutorials', href: '/#guides', icon: <BookOpen className="w-3.5 h-3.5" /> },
   ];
+
+  const dynamicLinks = (globalSettings?.navigationLinks || []).map((link: any) => ({
+    name: link.label, 
+    href: link.url, 
+    icon: <Cpu className="w-3.5 h-3.5" /> 
+  }));
+
+  const navLinks = [...defaultNavLinks, ...dynamicLinks];
 
   const getWorkspaceInfo = () => {
     if (isSuperAdmin) return { label: 'Super Admin Console', icon: <Crown className="w-3.5 h-3.5" />, color: 'text-red-600 bg-red-600/10' };
@@ -188,46 +195,18 @@ export function Navbar() {
         <div className="w-px h-4 bg-border mx-2" />
 
         <div className="relative flex items-center">
-          {isSearchOpen ? (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 160, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              className="flex items-center"
-            >
-              <Input 
-                placeholder="Search ROMs/Modules..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    setIsSearchOpen(false);
-                    window.location.href = '/search';
-                  }
-                }}
-                className="h-9 w-40 rounded-full bg-muted/50 border-border text-[10px] pl-4 pr-8"
-                autoFocus
-              />
-              <Search 
-                className="absolute right-3 w-3.5 h-3.5 text-muted-foreground mr-1 cursor-pointer"
-                onClick={() => {
-                  setIsSearchOpen(false);
-                  if(searchQuery) window.location.href = '/search';
-                }}
-              />
-            </motion.div>
-          ) : (
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsSearchOpen(true)}
-                className="w-9 h-9 rounded-full hover:bg-muted text-muted-foreground flex items-center justify-center"
-              >
-                <Search className="w-4 h-4" />
-              </Button>
-            </motion.div>
-          )}
+          <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground" />
+          <Input 
+            placeholder="Search..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                window.location.href = '/search';
+              }
+            }}
+            className="h-9 w-40 rounded-full bg-muted/50 border-border text-[10px] pl-9"
+          />
         </div>
         
         <div className="w-px h-4 bg-border mx-2" />

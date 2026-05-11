@@ -76,6 +76,28 @@ export function Hero() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const highlightWords = (text: string) => {
+    if (!globalSettings?.highlightedWords || globalSettings.highlightedWords.length === 0) return text;
+    let parts: (string | React.ReactNode)[] = [text];
+    
+    globalSettings.highlightedWords.forEach((hw: any) => {
+      if (!hw.word) return;
+      // Escape the word for use in RegExp
+      const escapedWord = hw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escapedWord})`, 'gi');
+      
+      parts = parts.flatMap((p: any, pIdx: number) => {
+        if (typeof p === 'string') {
+          const split = p.split(regex);
+          return split.map((s, i) => i % 2 !== 0 ? <span key={`${hw.word}-${pIdx}-${i}`} style={{ color: hw.color, textShadow: `0 0 10px ${hw.color}80` }}>{s}</span> : s);
+        }
+        return p;
+      });
+    });
+    
+    return parts;
+  };
+
   return (
     <section className="relative pt-32 pb-32 overflow-hidden flex flex-col items-center justify-center text-center px-6 min-h-[80vh]">
       {/* Enhanced Background Decor */}
@@ -89,7 +111,7 @@ export function Hero() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-border bg-card/10 text-foreground text-[10px] font-black tracking-[0.3em] mb-12 uppercase backdrop-blur-md"
+          className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-border bg-card/10 text-foreground text-[10px] font-black tracking-[0.3em] mb-12 uppercase backdrop-blur-md glitch-hover"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
           SKY / SKY_PRO PROTOCOL ACTIVE
@@ -99,11 +121,11 @@ export function Hero() {
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="text-6xl md:text-8xl lg:text-[120px] font-black tracking-tighter mb-6 flex flex-col leading-[0.85] uppercase text-foreground"
+          className="text-6xl md:text-8xl lg:text-[120px] font-black tracking-tighter mb-6 flex flex-col leading-[0.85] uppercase text-foreground glitch-hover"
         >
           {titleLines.map((line: string, index: number) => (
             <span key={index} className={index === 0 ? "drop-shadow-2xl" : "text-muted-foreground/30 italic"}>
-              {line}
+              {highlightWords(line)}
             </span>
           ))}
         </motion.h1>
@@ -114,7 +136,7 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-medium leading-relaxed tracking-tight whitespace-pre-line"
         >
-          {heroSubtitle}
+          {highlightWords(heroSubtitle)}
         </motion.p>
 
         {/* Translucent Network Bar Protocol with Lightning Effects */}

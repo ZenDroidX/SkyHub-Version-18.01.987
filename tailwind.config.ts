@@ -10,9 +10,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        displayFont: ['Cinzel', 'serif'],
-        body: ['Cormorant Garamond', 'serif'],
-        code: ['Source Code Pro', 'monospace'],
+        display: ['var(--font-display)', 'monospace'],
+        body: ['var(--font-body)', 'monospace'],
+        code: ['var(--font-body)', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',

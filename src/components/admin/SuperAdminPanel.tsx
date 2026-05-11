@@ -206,6 +206,8 @@ export default function SuperAdminPanel() {
       <Tabs defaultValue="theme" orientation="vertical" className="w-full flex flex-col md:flex-row gap-8">
         <TabsList className="flex md:flex-col h-auto bg-transparent border-none gap-2 md:w-64 shrink-0 overflow-x-auto md:overflow-visible pb-4 md:pb-0 scrollbar-hide">
           <TabsTrigger value="theme" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Theme</TabsTrigger>
+          <TabsTrigger value="navigation" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Navigation / Hamburger</TabsTrigger>
+          <TabsTrigger value="highlighting" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Highlighted Words</TabsTrigger>
           <TabsTrigger value="identity" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Architect Identity</TabsTrigger>
           <TabsTrigger value="slideshow" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Slideshow</TabsTrigger>
           <TabsTrigger value="support" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Support Links</TabsTrigger>
@@ -222,6 +224,132 @@ export default function SuperAdminPanel() {
             <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Global Theme Registry</h3>
             <ThemeManager />
           </div>
+        </TabsContent>
+
+        <TabsContent value="navigation">
+          <Card>
+            <CardHeader><CardTitle>Hamburger Menu & Navigation</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              {formData.navigationLinks?.map((link: any, index: number) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <Input placeholder="Link Label" value={link.label || ''} onChange={(e) => {
+                    const newLinks = [...(formData.navigationLinks || [])];
+                    newLinks[index].label = e.target.value;
+                    setFormData({...formData, navigationLinks: newLinks});
+                  }} />
+                  <Input placeholder="URL" value={link.url || ''} onChange={(e) => {
+                    const newLinks = [...(formData.navigationLinks || [])];
+                    newLinks[index].url = e.target.value;
+                    setFormData({...formData, navigationLinks: newLinks});
+                  }} />
+                  <Button variant="destructive" onClick={() => {
+                    const newLinks = formData.navigationLinks.filter((_:any, i:number) => i !== index);
+                    setFormData({...formData, navigationLinks: newLinks});
+                  }}>Remove</Button>
+                </div>
+              ))}
+              <Button onClick={() => setFormData({...formData, navigationLinks: [...(formData.navigationLinks || []), {label: '', url: ''}]})}>Add Link</Button>
+              <Button onClick={handleSave} className="ml-2">Save Changes</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sections">
+          <Card>
+            <CardHeader><CardTitle>Custom Homepage Sections</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-foreground mb-4">Create dynamic sections like "Custom ROMs", "Wallpapers", "Custom Recovery".</p>
+              {formData.customSections?.map((section: any, index: number) => (
+                <div key={index} className="p-4 border border-border rounded-xl space-y-4 mb-4 relative">
+                  <Button variant="destructive" size="sm" className="absolute top-2 right-2" onClick={() => {
+                    const newSections = formData.customSections.filter((_:any, i:number) => i !== index);
+                    setFormData({...formData, customSections: newSections});
+                  }}>Remove Section</Button>
+                  
+                  <div className="space-y-2">
+                    <Label>Section Title</Label>
+                    <Input placeholder="e.g. Wallpapers" value={section.title || ''} onChange={(e) => {
+                      const newSections = [...(formData.customSections || [])];
+                      newSections[index].title = e.target.value;
+                      setFormData({...formData, customSections: newSections});
+                    }} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Section Content (Markdown/Text)</Label>
+                    <textarea 
+                      className="w-full min-h-[100px] p-2 bg-transparent border border-border rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Content for this section..." 
+                      value={section.content || ''} 
+                      onChange={(e) => {
+                        const newSections = [...(formData.customSections || [])];
+                        newSections[index].content = e.target.value;
+                        setFormData({...formData, customSections: newSections});
+                      }} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Word Highlights for this Section</Label>
+                    {section.highlights?.map((hl: any, hIndex: number) => (
+                      <div key={hIndex} className="flex gap-2 items-center mb-2">
+                        <Input placeholder="Word" value={hl.word || ''} onChange={(e) => {
+                          const newSections = [...(formData.customSections || [])];
+                          newSections[index].highlights[hIndex].word = e.target.value;
+                          setFormData({...formData, customSections: newSections});
+                        }} />
+                        <Input type="color" value={hl.color || '#ff00ff'} onChange={(e) => {
+                          const newSections = [...(formData.customSections || [])];
+                          newSections[index].highlights[hIndex].color = e.target.value;
+                          setFormData({...formData, customSections: newSections});
+                        }} className="w-16 h-10 p-1" />
+                        <Button variant="outline" size="sm" onClick={() => {
+                          const newSections = [...(formData.customSections || [])];
+                          newSections[index].highlights = newSections[index].highlights.filter((_:any, i:number) => i !== hIndex);
+                          setFormData({...formData, customSections: newSections});
+                        }}>X</Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => {
+                        const newSections = [...(formData.customSections || [])];
+                        if (!newSections[index].highlights) newSections[index].highlights = [];
+                        newSections[index].highlights.push({word: '', color: '#00ffff'});
+                        setFormData({...formData, customSections: newSections});
+                    }}>Add Word Highlight</Button>
+                  </div>
+                </div>
+              ))}
+              <Button onClick={() => setFormData({...formData, customSections: [...(formData.customSections || []), {title: '', content: '', highlights: []}]})}>Add Custom Section</Button>
+              <Button onClick={handleSave} className="ml-2 cyber-button">Save Changes</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="highlighting">
+          <Card>
+            <CardHeader><CardTitle>Highlighted Words Configuration</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-foreground mb-4">Define words to automatically color across the site.</p>
+              {formData.highlightedWords?.map((item: any, index: number) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <Input placeholder="Word/Phrase to Highlight" value={item.word || ''} onChange={(e) => {
+                    const newWords = [...(formData.highlightedWords || [])];
+                    newWords[index].word = e.target.value;
+                    setFormData({...formData, highlightedWords: newWords});
+                  }} />
+                  <Input type="color" value={item.color || '#ff00ff'} onChange={(e) => {
+                    const newWords = [...(formData.highlightedWords || [])];
+                    newWords[index].color = e.target.value;
+                    setFormData({...formData, highlightedWords: newWords});
+                  }} className="w-16 h-10 p-1" />
+                  <Button variant="destructive" onClick={() => {
+                    const newWords = formData.highlightedWords.filter((_:any, i:number) => i !== index);
+                    setFormData({...formData, highlightedWords: newWords});
+                  }}>Remove</Button>
+                </div>
+              ))}
+              <Button onClick={() => setFormData({...formData, highlightedWords: [...(formData.highlightedWords || []), {word: '', color: '#00ffff'}]})}>Add Highlighted Word</Button>
+              <Button onClick={handleSave} className="ml-2 cyber-button">Save Changes</Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="identity">
@@ -392,17 +520,36 @@ export default function SuperAdminPanel() {
 
         <TabsContent value="support">
           <Card>
-            <CardHeader><CardTitle>Support Links</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Support Links & Funding Info</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Payment Link</Label>
                 <Input value={formData.supportLinks?.paymentLink || ''} onChange={(e) => setFormData({...formData, supportLinks: {...formData.supportLinks, paymentLink: e.target.value}})} />
               </div>
               <div className="space-y-2">
+                <Label>UPI ID</Label>
+                <Input value={formData.supportLinks?.upiId || ''} onChange={(e) => setFormData({...formData, supportLinks: {...formData.supportLinks, upiId: e.target.value}})} />
+              </div>
+              <div className="space-y-2">
                 <Label>QR Link</Label>
                 <Input value={formData.supportLinks?.qrLink || ''} onChange={(e) => setFormData({...formData, supportLinks: {...formData.supportLinks, qrLink: e.target.value}})} />
               </div>
-              <Button onClick={handleSave}>Save Changes</Button>
+              
+              <div className="mt-8 border-t border-border pt-4">
+                <h4 className="text-sm font-bold uppercase mb-4">Kitty GIF Configuration</h4>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="kittyEnabled" checked={formData.kittenConfig?.enabled || false} onChange={(e) => setFormData({...formData, kittenConfig: {...formData.kittenConfig, enabled: e.target.checked}})} />
+                    <Label htmlFor="kittyEnabled">Enable Kitty GIF above Donor Board</Label>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Kitty GIF Image URL</Label>
+                    <Input value={formData.kittenConfig?.imageUrl || ''} onChange={(e) => setFormData({...formData, kittenConfig: {...formData.kittenConfig, imageUrl: e.target.value}})} />
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={handleSave} className="mt-4 cyber-button">Save Changes</Button>
             </CardContent>
           </Card>
         </TabsContent>
