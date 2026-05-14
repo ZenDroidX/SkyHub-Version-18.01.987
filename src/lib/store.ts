@@ -77,6 +77,7 @@ export interface SiteSettings {
   adminName?: string;
   adminBio?: string;
   adminAvatarUrl?: string;
+  adminPhotoRedirectUrl?: string;
   telegramChannelUrl?: string;
   telegramDiscussionUrl?: string;
   telegramLogoUrl?: string;

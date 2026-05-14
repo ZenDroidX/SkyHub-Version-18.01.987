@@ -390,6 +390,17 @@ export default function SuperAdminPanel() {
                     />
                   </div>
                 </div>
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em]">Avatar Click Redirect URL</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="HTTPS link to redirect when clicked" 
+                      value={identityData?.adminPhotoRedirectUrl || ''} 
+                      onChange={(e) => setIdentityData({...identityData, adminPhotoRedirectUrl: e.target.value})}
+                      className="h-12 rounded-xl bg-muted/50 border-border flex-1"
+                    />
+                  </div>
+                </div>
                 <Button 
                   onClick={handleSaveIdentity} 
                   className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-black uppercase text-[10px] tracking-widest"

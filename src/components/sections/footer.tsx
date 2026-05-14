@@ -35,12 +35,23 @@ export function Footer() {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-10 relative z-10">
             <div className="relative">
               <div className="absolute -inset-4 bg-blue-600/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              <Avatar className="w-32 h-32 rounded-[2.5rem] border-2 border-white/5 shadow-2xl relative">
-                <AvatarImage src={activeConfig.adminAvatarUrl} className="object-cover" />
-                <AvatarFallback className="bg-white/5 text-blue-600 font-black text-2xl uppercase">
-                  {activeConfig.adminName?.[0] || 'A'}
-                </AvatarFallback>
-              </Avatar>
+              {activeConfig.adminPhotoRedirectUrl ? (
+                <a href={activeConfig.adminPhotoRedirectUrl} target="_blank" rel="noopener noreferrer" className="block cursor-pointer">
+                  <Avatar className="w-32 h-32 rounded-[2.5rem] border-2 border-white/5 shadow-2xl relative hover:scale-105 transition-transform duration-300">
+                    <AvatarImage src={activeConfig.adminAvatarUrl} className="object-cover" />
+                    <AvatarFallback className="bg-white/5 text-blue-600 font-black text-2xl uppercase">
+                      {activeConfig.adminName?.[0] || 'A'}
+                    </AvatarFallback>
+                  </Avatar>
+                </a>
+              ) : (
+                <Avatar className="w-32 h-32 rounded-[2.5rem] border-2 border-white/5 shadow-2xl relative">
+                  <AvatarImage src={activeConfig.adminAvatarUrl} className="object-cover" />
+                  <AvatarFallback className="bg-white/5 text-blue-600 font-black text-2xl uppercase">
+                    {activeConfig.adminName?.[0] || 'A'}
+                  </AvatarFallback>
+                </Avatar>
+              )}
             </div>
 
             <div className="flex-1 text-center md:text-left">
