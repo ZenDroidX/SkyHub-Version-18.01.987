@@ -39,7 +39,11 @@ export function getFirebaseAdmin() {
 /**
  * Accessor for the Firestore instance using the Admin SDK bio-signature.
  */
+import { getFirestore } from 'firebase-admin/firestore';
+
 export const adminDb = () => {
   const app = getFirebaseAdmin();
-  return app ? admin.firestore(app) : null;
+  if (!app) return null;
+  // Use the correct database instead of (default)
+  return getFirestore(app, 'ai-studio-fe1b8646-47c1-4daf-badf-db55d5475837');
 };
