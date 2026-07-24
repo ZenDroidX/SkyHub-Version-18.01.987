@@ -1,12 +1,11 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+<img width="1200" height="475" alt="Jai Bhawani" src="https://ibb.co/M5NZwG6M" />
 </div>
 
-# Run and deploy your AI Studio app
+# Jai Bhawani #SkyHub
 
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/fe1b8646-47c1-4daf-badf-db55d5475837
 
 ## Run Locally
 
