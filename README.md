@@ -1,5 +1,5 @@
 <div align="center">
-<img width="1200" height="475" alt="Jai Bhawani" src="https://ibb.co/M5NZwG6M" />
+<img width="1200" height="475" alt="Jai Bhawani" src="https://i.postimeg.cc/bed7f349292f4e22bebc833ddf9cba0e.jpg" />
 </div>
 
 # Jai Bhawani #SkyHub
