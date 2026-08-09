@@ -111,6 +111,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { extractFromContent } from '@/ai/client-ai';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import SuperAdminPanel from '@/components/admin/SuperAdminPanel';
+import BackupExporter from '@/components/admin/BackupExporter';
 
 const HUB_OWNERS = ['meinkxun@gmail.com', 'skyhubowner@gmail.com'];
 
@@ -319,7 +320,8 @@ export default function DashboardPage() {
     { id: 'history', label: 'Message History', icon: <MessageCircle className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'users', label: 'Identity Mgmt', icon: <Users className="w-4 h-4" />, permission: 'adminOnly' },
     { id: 'payments', label: 'Payment Hub', icon: <CreditCard className="w-4 h-4" />, permission: 'superAdminOnly' },
-    { id: 'maintenance', label: 'Maintenance Hub', icon: <Zap className="w-4 h-4" />, permission: 'superAdminOnly' }
+    { id: 'maintenance', label: 'Maintenance Hub', icon: <Zap className="w-4 h-4" />, permission: 'superAdminOnly' },
+    { id: 'backup', label: 'Export / Backup', icon: <Archive className="w-4 h-4" />, permission: 'adminOnly' }
   ].filter(item => {
     if (item.permission === 'all') return true;
     if (item.permission === 'superAdminOnly') return isSuperAdmin;
@@ -951,6 +953,8 @@ export default function DashboardPage() {
             </div>
           ) : activeTab === 'themes' ? (
             <SuperAdminPanel />
+          ) : activeTab === 'backup' ? (
+            <BackupExporter />
           ) : activeTab === 'layout' ? (
             <div className="space-y-10">
               <div className="flex items-center gap-4"><Settings2 className="w-8 h-8 text-primary" /><h2 className="text-3xl font-black uppercase">Layout Management</h2></div>

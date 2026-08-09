@@ -18,6 +18,7 @@ import ThemeManager from './ThemeManager';
 import { Slideshow } from '@/components/sections/slideshow';
 import { ActivityLog } from './ActivityLog';
 import DonorManager from './DonorManager';
+import BackupExporter from './BackupExporter';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logActivity } from '@/lib/activity-logger';
 import { useAuth } from '@/firebase';
@@ -216,6 +217,7 @@ export default function SuperAdminPanel() {
           <TabsTrigger value="donors" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Donors Wall</TabsTrigger>
           <TabsTrigger value="posts" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Posts</TabsTrigger>
           <TabsTrigger value="activity" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Activity Log</TabsTrigger>
+          <TabsTrigger value="backup" className="justify-start px-6 h-12 rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border border-border/50">Export / Backup</TabsTrigger>
         </TabsList>
 
         <div className="flex-1 min-w-0">
@@ -258,7 +260,7 @@ export default function SuperAdminPanel() {
           <Card>
             <CardHeader><CardTitle>Custom Homepage Sections</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-foreground mb-4">Create dynamic sections like "Custom ROMs", "Wallpapers", "Custom Recovery".</p>
+              <p className="text-sm text-foreground mb-4">Create dynamic sections like &quot;Custom ROMs&quot;, &quot;Wallpapers&quot;, &quot;Custom Recovery&quot;.</p>
               {formData.customSections?.map((section: any, index: number) => (
                 <div key={index} className="p-4 border border-border rounded-xl space-y-4 mb-4 relative">
                   <Button variant="destructive" size="sm" className="absolute top-2 right-2" onClick={() => {
@@ -647,6 +649,10 @@ export default function SuperAdminPanel() {
 
         <TabsContent value="activity">
            <ActivityLog />
+        </TabsContent>
+
+        <TabsContent value="backup">
+           <BackupExporter />
         </TabsContent>
         </div>
       </Tabs>
