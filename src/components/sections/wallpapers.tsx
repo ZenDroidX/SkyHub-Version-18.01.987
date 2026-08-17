@@ -1,327 +1,176 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Download, Library, Loader2, FileArchive, CheckSquare, Square, Circle, CheckCircle2, Sparkles } from 'lucide-react';
-import Link from 'next/link';
-import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import JSZip from 'jszip';
-import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { 
+  Download, 
+  ExternalLink, 
+  Eye, 
+  Sparkles, 
+  Image as ImageIcon, 
+  Maximize2, 
+  X,
+  Layers,
+  ChevronRight
+} from 'lucide-react';
+import { useFirestore } from '@/firebase';
+import { updateDoc, doc, increment } from 'firebase/firestore';
+import { toast } from '@/hooks/use-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import Link from 'next/link';
 
-export function Wallpapers({ wallpapers, isLoading }: { wallpapers: any[], isLoading: boolean }) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isBulkDownloading, setIsBulkDownloading] = useState(false);
-  const [isZipLoading, setIsZipLoading] = useState(false);
+export function WallpaperGrid({ wallpapers, isLoading }: { wallpapers: any[]; isLoading: boolean }) {
+  const db = useFirestore();
+  const [selectedWallpaper, setSelectedWallpaper] = useState<any>(null);
 
-  const isNewAsset = (createdAt: any) => {
-    if (!createdAt) return false;
-    const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
-    const now = new Date();
-    // 24 Hour Threshold: 24 * 60 * 60 * 1000 ms
-    return (now.getTime() - date.getTime()) < 86400000;
-  };
-
-  const toggleSelection = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  const handleSelectAll = () => {
-    const visibleWallpapers = wallpapers.slice(0, 4);
-    if (selectedIds.size === visibleWallpapers.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(visibleWallpapers.map(w => w.id)));
-    }
-  };
-
-  const handleDownload = async (url: string, name: string) => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `${name.replace(/\s+/g, '-').toLowerCase() || 'skyhub-wallpaper'}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-      toast({ title: "Asset Saved", description: "Wallpaper added to your library." });
-    } catch (e) {
-      window.open(url, '_blank');
-    }
-  };
-
-  const handleBulkDownload = async () => {
-    const itemsToDownload = selectedIds.size > 0 
-      ? wallpapers?.filter(w => selectedIds.has(w.id)) 
-      : wallpapers.slice(0, 4);
-
-    if (!itemsToDownload || itemsToDownload.length === 0) return;
-    
-    setIsBulkDownloading(true);
-    toast({ 
-      title: "Bulk Acquisition Initiated", 
-      description: `Synchronizing ${itemsToDownload.length} assets with the local terminal.` 
-    });
-
-    for (let i = 0; i < itemsToDownload.length; i++) {
-      const wall = itemsToDownload[i];
-      try {
-        const response = await fetch(wall.imageUrl);
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        const fileName = `SkyHub Wallo ${i + 1}.jpg`;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } catch (e) {
-        console.error("Bulk sync failed for asset:", wall.imageUrl);
-      }
-    }
-
-    setIsBulkDownloading(false);
-    toast({ title: "Bulk Sync Complete", description: "Selected visual assets have been synchronized." });
-  };
-
-  const handleZipDownload = async () => {
-    const itemsToZip = selectedIds.size > 0 
-      ? wallpapers?.filter(w => selectedIds.has(w.id)) 
-      : wallpapers.slice(0, 4);
-
-    if (!itemsToZip || itemsToZip.length === 0) return;
-    
-    setIsZipLoading(true);
-    const zip = new JSZip();
-    const folder = zip.folder("sky-wallpapers");
-
-    toast({ 
-      title: "Archiving Started", 
-      description: `Compressing ${itemsToZip.length} selected assets into a single ZIP terminal.` 
-    });
+  const handleDownload = async (wall: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!wall.imageUrl && !wall.downloadUrl) return;
 
     try {
-      for (let i = 0; i < itemsToZip.length; i++) {
-        const wall = itemsToZip[i];
-        try {
-          const response = await fetch(wall.imageUrl);
-          if (!response.ok) throw new Error('Fetch error');
-          const blob = await response.blob();
-          const fileName = `SkyHub Wallo ${i + 1}.jpg`;
-          folder?.file(fileName, blob);
-        } catch (itemError) {
-          console.warn(`Registry skip: Node ${i+1} failed to archive.`, itemError);
-        }
+      if (db) {
+        await updateDoc(doc(db, 'wallpapers', wall.id), {
+          downloadCount: increment(1)
+        });
       }
-
-      const content = await zip.generateAsync({ type: "blob" });
-      const blobUrl = window.URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `SkyHub-Wallo-Bundle.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-      
-      toast({ title: "Archive Ready", description: "ZIP protocol synchronized successfully." });
     } catch (e) {
-      toast({ 
-        variant: "destructive", 
-        title: "Archive Failed", 
-        description: "Protocol error during compression." 
-      });
-    } finally {
-      setIsZipLoading(false);
+      console.error(e);
     }
+
+    const url = wall.downloadUrl || wall.imageUrl;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${wall.name || 'SkyHub-Wallpaper'}.jpg`;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast({ title: "Wallpaper Downloaded", description: "Saved to your device in full resolution." });
   };
-
-  if (isLoading) {
-    return (
-      <section id="wallpapers" className="py-20 max-w-7xl mx-auto px-6">
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-10 h-10 border-4 border-white/10 border-t-white rounded-full animate-spin" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Loading Visuals...</p>
-        </div>
-      </section>
-    );
-  }
-
-  const visibleWallpapers = wallpapers.slice(0, 4);
-  const hasNewWallpapers = visibleWallpapers.some(w => isNewAsset(w.createdAt));
 
   return (
-    <section id="wallpapers" className="py-20 max-w-7xl mx-auto px-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-12">
-        <motion.div 
-          className="space-y-2"
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-        >
-          {hasNewWallpapers && (
-            <motion.div 
-              className="flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-[0.3em] mb-2"
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-            >
-              <Sparkles className="w-3 h-3" />
-              NEWLY ADDED PROTOCOLS
-            </motion.div>
-          )}
-          <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-foreground">SKY <span className="text-[#2563eb]">WALLPAPERS</span></h2>
-          <p className="text-muted-foreground">High fidelity visual assets for Sky devices.</p>
-        </motion.div>
-        
-        <motion.div 
-          className="flex flex-wrap items-center gap-4 w-full sm:w-auto"
-          initial={{ opacity: 0, x: 30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-        >
-          {wallpapers.length > 0 && (
-            <>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  variant="outline"
-                  onClick={handleSelectAll}
-                  className="h-10 px-4 rounded-xl border-white/10 bg-white/5 text-foreground font-black uppercase text-[9px] tracking-widest gap-2"
-                >
-                  {selectedIds.size === visibleWallpapers.length ? <CheckSquare className="w-3.5 h-3.5 text-blue-500" /> : <Square className="w-3.5 h-3.5" />}
-                  {selectedIds.size === visibleWallpapers.length ? 'Deselect All' : 'Select All'}
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  onClick={handleZipDownload} 
-                  disabled={isZipLoading || isBulkDownloading}
-                  variant="outline" 
-                  className="h-10 px-6 rounded-xl border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 font-black uppercase text-[10px] tracking-widest gap-2"
-                >
-                  {isZipLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileArchive className="w-3.5 h-3.5" />}
-                  Download ZIP {selectedIds.size > 0 ? `(${selectedIds.size})` : 'Archive'}
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  onClick={handleBulkDownload} 
-                  disabled={isBulkDownloading || isZipLoading}
-                  variant="outline" 
-                  className="h-10 px-6 rounded-xl border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 font-black uppercase text-[10px] tracking-widest gap-2"
-                >
-                  {isBulkDownloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Library className="w-3.5 h-3.5" />}
-                  Bulk Sync {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
-                </Button>
-              </motion.div>
-            </>
-          )}
-          <Link href="/wallpapers">
-            <Button variant="link" className="text-foreground font-bold uppercase tracking-widest text-[10px] hover:text-[#2563eb] h-10 px-0">Browse All</Button>
-          </Link>
-        </motion.div>
+    <section id="wallpapers" className="py-24 max-w-7xl mx-auto px-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-pill border-purple-500/20 text-purple-500 text-xs font-semibold tracking-wider uppercase mb-4">
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>Visual Artwork</span>
+          </div>
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-foreground">
+            Featured <span className="text-purple-500 italic">Wallpapers</span>
+          </h2>
+          <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-xl">
+            Hand-curated, high-resolution AMOLED and minimalist wallpapers designed for crisp mobile displays.
+          </p>
+        </div>
+
+        <Link href="/wallpapers">
+          <Button variant="outline" className="h-10 rounded-2xl border-border/80 text-xs font-semibold gap-1.5">
+            <span>View Full Gallery</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Button>
+        </Link>
       </div>
 
-      {wallpapers.length === 0 ? (
-        <div className="py-32 text-center border border-dashed border-white/10 rounded-3xl">
-          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground">Empty Repository</p>
+      {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="aspect-[9/16] rounded-3xl bg-muted/40 animate-pulse border border-border/60" />
+          ))}
+        </div>
+      ) : (wallpapers || []).length === 0 ? (
+        <div className="py-16 text-center rounded-3xl border border-border/60 bg-card/30 max-w-md mx-auto">
+          <p className="text-xs text-muted-foreground">No wallpapers published yet.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {visibleWallpapers.map((wall, idx) => {
-            const isSelected = selectedIds.has(wall.id);
-            const isNew = isNewAsset(wall.createdAt);
-            
-            return (
-              <motion.div 
-                key={wall.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-              >
-                <Card 
-                  onClick={() => toggleSelection(wall.id)}
-                  className={cn(
-                    "relative group aspect-[9/16] overflow-hidden rounded-[2.5rem] bg-[#0a0a0a] border-white/10 cursor-pointer transition-all duration-300",
-                    isSelected ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-background" : "hover:border-blue-500/50"
-                  )}
-                >
-                  {wall.imageUrl ? (
-                    <motion.img 
-                      src={wall.imageUrl} 
-                      alt="Wallpaper" 
-                      className={cn(
-                        "object-cover w-full h-full transition-transform duration-700",
-                        !isSelected && "group-hover:scale-105",
-                        isSelected && "scale-105 blur-[1px]"
-                      )} 
-                      whileHover={{ scale: 1.05 }}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-blue-500/20 p-8 text-center bg-black/40">
-                      <Sparkles className="w-12 h-12 mb-4" />
-                      <p className="text-[10px] font-black uppercase tracking-widest leading-tight">Image will be added soon.<br/>Sorry for the inconvenience.</p>
-                    </div>
-                  )}
-                  <div className={cn(
-                    "absolute inset-0 transition-opacity duration-300",
-                    isSelected ? "bg-blue-500/10" : "bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100"
-                  )} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+          {wallpapers.slice(0, 8).map((wall, idx) => (
+            <motion.div
+              key={wall.id}
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: idx * 0.05 }}
+              whileHover={{ y: -6 }}
+              className="group cursor-pointer"
+              onClick={() => setSelectedWallpaper(wall)}
+            >
+              <Card className="relative aspect-[9/16] rounded-3xl overflow-hidden border border-border/80 hover:border-purple-500/50 transition-all duration-300 bg-card shadow-sm hover:shadow-xl p-0">
+                <img 
+                  src={wall.previewUrl || wall.imageUrl} 
+                  alt={wall.name || 'Wallpaper'} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                />
+                
+                {/* Gradient and info overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-4 text-white">
+                  <div className="flex justify-end">
+                    <span className="p-2 rounded-xl bg-black/40 backdrop-blur-md text-white/90">
+                      <Maximize2 className="w-4 h-4" />
+                    </span>
+                  </div>
 
-                  {/* Selection Indicator */}
-                  <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
-                    {isSelected ? (
-                      <CheckCircle2 className="w-6 h-6 text-white fill-blue-500" />
-                    ) : (
-                      <Circle className="w-6 h-6 text-white/40 group-hover:text-white transition-colors" />
-                    )}
-                    {isNew && !isSelected && (
-                      <Badge className="bg-primary text-primary-foreground font-black text-[7px] uppercase px-2 py-0.5 border-none animate-bounce">
-                        NEW
-                      </Badge>
-                    )}
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-white truncate mb-2">{wall.name || 'Minimal Visual'}</h4>
+                    <Button 
+                      size="sm" 
+                      onClick={(e) => handleDownload(wall, e)}
+                      className="w-full h-8 rounded-xl bg-white/20 hover:bg-white text-white hover:text-black font-bold text-[11px] backdrop-blur-md border border-white/20 transition-all"
+                    >
+                      <Download className="w-3 h-3 mr-1" />
+                      <span>Download</span>
+                    </Button>
                   </div>
-                  
-                  <div className="absolute inset-x-0 bottom-0 p-6 flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <Badge className="bg-[#2563eb] text-white font-black uppercase text-[8px] tracking-widest rounded-lg px-3 py-1 border-none">
-                        {wall.category || 'Sky'}
-                      </Badge>
-                    </div>
-                    
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(wall.imageUrl, wall.name);
-                        }}
-                        className="w-full rounded-2xl bg-white hover:bg-[#2563eb] hover:text-white text-black font-black uppercase text-[10px] tracking-widest h-12 transition-all shadow-xl"
-                      >
-                        <Download className="mr-2 w-4 h-4" />
-                        Download
-                      </Button>
-                    </motion.div>
-                  </div>
-                </Card>
-              </motion.div>
-            );
-          })}
+                </div>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       )}
+
+      {/* Wallpaper Lightbox Dialog */}
+      <Dialog open={!!selectedWallpaper} onOpenChange={(open) => !open && setSelectedWallpaper(null)}>
+        <DialogContent className="max-w-3xl rounded-3xl border border-border glass bg-card/95 p-6 shadow-2xl">
+          {selectedWallpaper && (
+            <div className="space-y-6">
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl overflow-hidden bg-black/50 border border-border/80 flex items-center justify-center">
+                <img 
+                  src={selectedWallpaper.imageUrl || selectedWallpaper.previewUrl} 
+                  alt={selectedWallpaper.name} 
+                  className="max-h-full max-w-full object-contain" 
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">{selectedWallpaper.name || 'Wallpaper Asset'}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {selectedWallpaper.category || 'Aesthetic'} • {selectedWallpaper.downloadCount || 0} Total Downloads
+                  </p>
+                </div>
+
+                <Button 
+                  onClick={() => handleDownload(selectedWallpaper)}
+                  className="h-11 px-6 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider shadow-md gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Full Resolution</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
+
+export const Wallpapers = WallpaperGrid;

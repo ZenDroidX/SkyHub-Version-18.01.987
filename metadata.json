@@ -1,5 +1,8 @@
 {
-  "name": "Skyhub",
-  "description": "A secure full-stack identity management platform with 3-tier access control and dark theme.",
-  "requestFramePermissions": []
+  "name": "SkyHub",
+  "description": "The premier platform for curated custom ROMs, high-performance kernels, KernelSU modules, and recovery resources built for the Snapdragon 4 Gen 2 ecosystem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

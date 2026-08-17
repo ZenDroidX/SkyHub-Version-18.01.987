@@ -1,8 +1,8 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   Cpu, 
   ImageIcon, 
@@ -14,22 +14,27 @@ import {
   Code, 
   Crown, 
   Shield,
-  BookOpen,
-  Sun,
-  Moon,
-  ChevronRight,
-  Terminal,
-  Loader2,
-  Heart,
-  Copy,
-  Check,
-  Send,
-  MessageSquare,
-  Search
+  BookOpen, 
+  Sun, 
+  Moon, 
+  ChevronRight, 
+  Terminal, 
+  Loader2, 
+  Heart, 
+  Copy, 
+  Check, 
+  Send, 
+  MessageSquare, 
+  Search,
+  Sparkles,
+  Command,
+  User as UserIcon,
+  X,
+  ExternalLink,
+  Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useFirebase, useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useSearch } from '@/context/SearchContext';
@@ -49,18 +54,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion, AnimatePresence } from 'framer-motion';
 import { DEFAULT_DONATION_CONFIG, SiteSettings } from '@/lib/store';
 import { AuthModal } from '@/components/auth/auth-modal';
+import { SearchOverlay } from '@/components/ui/SearchOverlay';
 
 const HUB_OWNERS = ['meinkxun@gmail.com', 'skyhubowner@gmail.com'];
 
 export function Navbar() {
   const { user, auth, firestore: db } = useFirebase();
+  const pathname = usePathname();
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => 
@@ -77,12 +86,10 @@ export function Navbar() {
   const upiId = settings?.upiId || DEFAULT_DONATION_CONFIG.upiId;
   const upiAmount = settings?.upiAmount || DEFAULT_DONATION_CONFIG.upiAmount;
   const qrUrl = settings?.qrImageUrl || DEFAULT_DONATION_CONFIG.qrImageUrl;
-  const qrLink = globalSettings?.supportLinks?.qrLink || qrUrl;
-  const brandName = globalSettings?.brandName || 'SKY HUB';
+  const brandName = globalSettings?.brandName || 'SkyHub';
   const logoUrl = settings?.logoUrl || DEFAULT_DONATION_CONFIG.logoUrl;
   const telegramChannel = globalSettings?.socialLinks?.telegramChannel || DEFAULT_DONATION_CONFIG.telegramChannelUrl;
   const telegramDiscussion = globalSettings?.socialLinks?.discussion || DEFAULT_DONATION_CONFIG.telegramDiscussionUrl;
-  const paymentLink = globalSettings?.supportLinks?.paymentLink || DEFAULT_DONATION_CONFIG.paymentLink;
 
   const isSuperAdmin = user?.email && HUB_OWNERS.includes(user.email.toLowerCase());
   const isAdminRole = profile?.role === 'admin';
@@ -102,6 +109,14 @@ export function Navbar() {
     }
   }, [theme]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
@@ -109,409 +124,361 @@ export function Navbar() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      toast({ title: "Session Terminated", description: "Logged out of Sky Hub." });
+      toast({ title: "Signed Out", description: "Logged out of SkyHub." });
     } catch (error) {
-      toast({ variant: "destructive", title: "Protocol Error", description: "Logout failed." });
-    }
-  };
-
-  const handleSupportClick = () => {
-    if (!upiId) {
-      toast({ title: "Configuration Error", description: "UPI ID has not been set by the admin." });
-      return;
-    }
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = `upi://pay?pa=${upiId}${upiAmount ? `&am=${upiAmount}` : ''}&cu=INR`;
-    } else {
-      setIsSupportOpen(true);
+      toast({ variant: "destructive", title: "Error", description: "Logout failed." });
     }
   };
 
   const copyUpiId = () => {
     navigator.clipboard.writeText(upiId);
     setCopied(true);
-    toast({ title: "Registry Copied", description: "UPI ID added to clipboard." });
+    toast({ title: "UPI ID Copied", description: "UPI ID copied to clipboard." });
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const { searchQuery, setSearchQuery } = useSearch();
-
-  const defaultNavLinks = [
-    { name: 'ROMs', href: '/#roms', icon: <Cpu className="w-3.5 h-3.5" /> },
-    { name: 'Modules', href: '/#modules', icon: <Smartphone className="w-3.5 h-3.5" /> },
-    { name: 'Mod APKs', href: '/#rooted-apks', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
-    { name: 'Wallpapers', href: '/#wallpapers', icon: <ImageIcon className="w-3.5 h-3.5" /> },
-    { name: 'Tutorials', href: '/#guides', icon: <BookOpen className="w-3.5 h-3.5" /> },
+  const navLinks = [
+    { name: 'ROMs', href: '/#roms', icon: Cpu },
+    { name: 'Devices', href: '/#devices', icon: Smartphone },
+    { name: 'Modules', href: '/#modules', icon: PackageIcon },
+    { name: 'Recoveries', href: '/#recoveries', icon: ShieldAlert },
+    { name: 'Guides', href: '/guides', icon: BookOpen },
+    { name: 'Wallpapers', href: '/wallpapers', icon: ImageIcon },
   ];
 
-  const dynamicLinks = (globalSettings?.navigationLinks || []).map((link: any) => ({
-    name: link.label, 
-    href: link.url, 
-    icon: <Cpu className="w-3.5 h-3.5" /> 
-  }));
-
-  const navLinks = [...defaultNavLinks, ...dynamicLinks];
-
-  const getWorkspaceInfo = () => {
-    if (isSuperAdmin) return { label: 'Super Admin Console', icon: <Crown className="w-3.5 h-3.5" />, color: 'text-red-600 bg-red-600/10' };
-    if (isAdminRole) return { label: 'Admin Control Center', icon: <Shield className="w-3.5 h-3.5" />, color: 'text-orange-600 bg-orange-600/10' };
-    if (isDeveloperRole) return { label: 'Developer Workspace', icon: <Code className="w-3.5 h-3.5" />, color: 'text-blue-600 bg-blue-600/10' };
-    return null;
-  };
-
-  const workspace = getWorkspaceInfo();
+  function PackageIcon(props: any) {
+    return <Layers {...props} />;
+  }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center p-6 pointer-events-none">
-      <nav className="hidden md:flex items-center gap-1.5 glass-pill px-2 py-1.5 rounded-full pointer-events-auto border border-border shadow-2xl">
-        <Link href="/" className="ml-4 mr-2 flex items-center">
-          {logoUrl ? (
-            <img src={logoUrl || undefined} className="h-10 w-auto object-contain py-1" alt="Logo" />
-          ) : (
-            <span className="font-black text-sm uppercase tracking-tighter">{brandName}</span>
-          )}
-        </Link>
-
-        <div className="w-px h-4 bg-border mx-2" />
-
-        {navLinks.map((link) => (
-          <Link
-            key={link.name}
-            href={link.href}
-            className="group"
-          >
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-all rounded-full hover:bg-muted"
-            >
-              {link.icon}
-              {link.name}
-            </motion.div>
-          </Link>
-        ))}
-        
-        <div className="w-px h-4 bg-border mx-2" />
-
-        <div className="relative flex items-center">
-          <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground" />
-          <Input 
-            placeholder="Search..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                window.location.href = '/search';
-              }
-            }}
-            className="h-9 w-40 rounded-full bg-muted/50 border-border text-[10px] pl-9"
-          />
-        </div>
-        
-        <div className="w-px h-4 bg-border mx-2" />
-
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="w-9 h-9 rounded-full hover:bg-muted text-muted-foreground flex items-center justify-center"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </Button>
-        </motion.div>
-
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSupportClick}
-            className="w-9 h-9 rounded-full hover:bg-muted text-red-500 flex items-center justify-center"
-          >
-            <Heart className="w-4 h-4 fill-current" />
-          </Button>
-        </motion.div>
-
-        {workspace && (
-          <Link href="/dashboard">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button 
-                variant="ghost"
-                className={cn(
-                  "h-9 px-4 rounded-full font-black uppercase text-[10px] tracking-widest gap-2 flex items-center justify-center transition-all",
-                  workspace.color
-                )}
-              >
-                {workspace.icon}
-                {workspace.label}
-              </Button>
-            </motion.div>
-          </Link>
+    <>
+      <header 
+        className={cn(
+          "fixed top-0 inset-x-0 z-50 transition-all duration-300 px-4 sm:px-6 md:px-8",
+          scrolled ? "py-3" : "py-5"
         )}
-
-        {user ? (
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleLogout} 
-              className="w-9 h-9 rounded-full hover:bg-muted text-red-500 ml-1 flex items-center justify-center"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </Button>
-          </motion.div>
-        ) : (
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsAuthOpen(true)}
-              className="w-9 h-9 rounded-full hover:bg-muted text-blue-600 ml-1 flex items-center justify-center"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-            </Button>
-          </motion.div>
-        )}
-      </nav>
-
-      <div className="md:hidden w-full flex justify-between items-center pointer-events-auto px-6 py-2.5 glass-pill rounded-full border border-border shadow-2xl">
-        <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
-          <Link href="/" className="flex items-center">
-            {logoUrl ? (
-              <img src={logoUrl || undefined} className="h-10 w-auto object-contain py-1" alt="Logo" />
-            ) : (
-              <span className="font-black text-xl uppercase tracking-tighter">{brandName}</span>
+      >
+        <div className="max-w-7xl mx-auto">
+          <nav 
+            className={cn(
+              "flex items-center justify-between px-4 sm:px-6 py-2.5 rounded-full transition-all duration-300 border",
+              scrolled 
+                ? "glass-pill shadow-xl shadow-black/5 bg-card/85 border-border/80" 
+                : "bg-card/60 backdrop-blur-lg border-border/50 shadow-md"
             )}
-          </Link>
-        </motion.div>
-        <div className="flex items-center gap-2">
-          <motion.div whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="w-10 h-10 rounded-full text-muted-foreground flex items-center justify-center hover:bg-muted transition-all"
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
-          </motion.div>
-
-          <motion.div whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSupportClick}
-              className="w-10 h-10 rounded-full text-red-500 flex items-center justify-center hover:bg-red-500/10 transition-all"
-            >
-              <Heart className="w-5 h-5 fill-current" />
-            </Button>
-          </motion.div>
-
-          {user ? (
-            <motion.div whileTap={{ scale: 0.9 }}>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleLogout}
-                className="w-10 h-10 rounded-full text-red-500 hover:bg-red-500/10 flex items-center justify-center transition-all"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </motion.div>
-          ) : (
-            <motion.div whileTap={{ scale: 0.9 }}>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setIsAuthOpen(true)}
-                className="w-10 h-10 rounded-full text-blue-600 hover:bg-blue-600/10 flex items-center justify-center transition-all"
-              >
-                <LogIn className="w-4 h-4" />
-              </Button>
-            </motion.div>
-          )}
-
-          <Sheet>
-            <SheetTrigger asChild>
-              <motion.div whileTap={{ scale: 0.9 }}>
-                <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 flex items-center justify-center hover:bg-muted transition-all">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </motion.div>
-            </SheetTrigger>
-            <SheetContent 
-              side="right" 
-              className="bg-background/95 backdrop-blur-3xl border-l border-border p-0 flex flex-col shadow-2xl overflow-hidden"
-            >
-              <SheetHeader className="p-8 border-b border-border">
-                <SheetTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
-                  <Terminal className="w-5 h-5 text-primary" />
-                  TERMINAL
-                </SheetTitle>
-              </SheetHeader>
-              
-              <ScrollArea className="flex-1 px-8 py-4">
-                <div className="flex flex-col gap-2">
-                  {navLinks.map((link, idx) => (
-                    <motion.div
-                      key={link.name}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.1, duration: 0.5 }}
-                    >
-                      <SheetClose asChild>
-                        <Link
-                          href={link.href}
-                          className="flex items-center justify-between py-4 group transition-all active:scale-95 border-b border-border/50 last:border-0"
-                        >
-                          <motion.div 
-                            className="flex items-center gap-4"
-                            whileHover={{ x: 10 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                              {link.icon}
-                            </div>
-                            <span className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground group-hover:text-foreground">{link.name}</span>
-                          </motion.div>
-                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
-                        </Link>
-                      </SheetClose>
-                    </motion.div>
-                  ))}
-                </div>
-              </ScrollArea>
-
-              <div className="p-8 border-t border-border space-y-3 bg-muted/30">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <Button 
-                    onClick={handleSupportClick}
-                    variant="outline"
-                    className="w-full h-12 rounded-2xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all text-[9px]"
-                  >
-                    <Heart className="w-4 h-4 fill-current" />
-                    Support Hub
-                  </Button>
-                </motion.div>
-
-                {workspace && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                  >
-                    <SheetClose asChild>
-                      <Link href="/dashboard" className="w-full block">
-                        <Button className={cn(
-                          "w-full h-12 rounded-2xl font-black uppercase tracking-widest gap-3 justify-start px-6 shadow-xl transition-all active:scale-95 text-[9px]",
-                          workspace.color.includes('red') ? "bg-red-600 text-white" : 
-                          workspace.color.includes('orange') ? "bg-orange-600 text-white" : 
-                          "bg-blue-600 text-white"
-                        )}>
-                          {workspace.icon}
-                          {workspace.label}
-                        </Button>
-                      </Link>
-                    </SheetClose>
-                  </motion.div>
+          >
+            {/* Brand Logo */}
+            <Link href="/" className="flex items-center gap-3 group shrink-0">
+              <div className="relative flex items-center justify-center">
+                {logoUrl ? (
+                  <img 
+                    src={logoUrl} 
+                    alt="SkyHub" 
+                    className="w-8 h-8 rounded-full object-cover border border-primary/40 group-hover:scale-105 transition-transform" 
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-sm shadow-primary/30 group-hover:scale-105 transition-transform">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
                 )}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 }}
-                >
-                  {user ? (
-                    <Button 
-                      variant="outline" 
-                      onClick={handleLogout} 
-                      className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all active:scale-95 text-[8px]"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Terminal Exit
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={() => setIsAuthOpen(true)} 
-                      className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 bg-blue-600 text-white shadow-xl shadow-blue-600/20 transition-all active:scale-95 text-[8px]"
-                    >
-                      <LogIn className="w-4 h-4" />
-                      Terminal Entry
-                    </Button>
-                  )}
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                >
-                  <Button 
-                    onClick={() => window.open(telegramChannel, '_blank')}
-                    variant="outline"
-                    className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-blue-500/20 text-blue-500 hover:bg-blue-500/10 transition-all active:scale-95 text-[8px]"
-                  >
-                    <Send className="w-4 h-4" />
-                    Telegram Channel
-                  </Button>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.9 }}
-                >
-                  <Button 
-                    onClick={() => window.open(telegramDiscussion, '_blank')}
-                    variant="outline"
-                    className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-3 justify-start px-6 border-green-500/20 text-green-500 hover:bg-green-500/10 transition-all active:scale-95 text-[8px]"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    Discussion Chat
-                  </Button>
-                </motion.div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-background animate-pulse" />
               </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
+              <div className="flex flex-col">
+                <span className="font-extrabold text-sm sm:text-base tracking-tight text-foreground flex items-center gap-1.5">
+                  {brandName}
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold uppercase tracking-wider hidden sm:inline-block">
+                    4G/5G
+                  </span>
+                </span>
+              </div>
+            </Link>
 
-      <AuthModal isOpen={isAuthOpen} onOpenChange={setIsAuthOpen} />
+            {/* Desktop Navigation Links */}
+            <div className="hidden lg:flex items-center gap-1">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-200"
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{link.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
 
-      <Dialog open={isSupportOpen} onOpenChange={setIsSupportOpen}>
-        <DialogContent className="bg-card border-border rounded-[3rem] p-10 max-w-sm flex flex-col items-center text-center gap-6">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tighter">Support Hub</DialogTitle>
-          </DialogHeader>
-          
-          <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            <img src={qrLink || undefined} alt="Payment QR" className="w-full h-full object-contain" />
-          </div>
+            {/* Right Action Tools */}
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              {/* Command Search Trigger Pill */}
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-medium border border-border/60 transition-all duration-200 shadow-sm"
+              >
+                <Search className="w-3.5 h-3.5 text-primary" />
+                <span className="hidden sm:inline">Search</span>
+                <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-background/80 text-[10px] font-mono text-muted-foreground border border-border/40">
+                  <span>⌘</span><span>K</span>
+                </kbd>
+              </button>
 
-          <div className="w-full space-y-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Registry UPI ID</span>
-              <div className="bg-muted p-4 rounded-2xl flex items-center justify-between border border-border group hover:border-primary/40 transition-all">
-                <span className="text-[10px] font-code text-foreground truncate">{upiId}</span>
-                <Button variant="ghost" size="icon" onClick={copyUpiId} className="h-8 w-8 rounded-xl shrink-0 ml-2">
-                  {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+              {/* Support Modal Trigger */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSupportOpen(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium border-primary/30 text-primary hover:bg-primary/10 transition-colors"
+              >
+                <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
+                <span>Support</span>
+              </Button>
+
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                aria-label="Toggle Theme"
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/60 transition-colors"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Moon className="w-4 h-4 text-sky-400" />
+                )}
+              </button>
+
+              {/* User / Auth State */}
+              {user ? (
+                <div className="flex items-center gap-1.5">
+                  {(isSuperAdmin || isAdminRole || isDeveloperRole) && (
+                    <Link href="/dashboard">
+                      <Button 
+                        size="sm" 
+                        variant="default"
+                        className="h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm hover:opacity-90"
+                      >
+                        <Shield className="w-3.5 h-3.5 mr-1" />
+                        <span>Admin</span>
+                      </Button>
+                    </Link>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleLogout}
+                    className="w-8 h-8 p-0 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => setIsAuthOpen(true)}
+                  className="h-8 px-3.5 rounded-full bg-primary text-primary-foreground font-semibold text-xs shadow-sm hover:opacity-90 transition-opacity"
+                >
+                  <LogIn className="w-3.5 h-3.5 mr-1.5" />
+                  <span>Sign In</span>
                 </Button>
+              )}
+
+              {/* Mobile Drawer Trigger */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="lg:hidden w-8 h-8 rounded-full flex items-center justify-center bg-muted/60 hover:bg-muted text-foreground border border-border/60 transition-colors"
+                aria-label="Open Menu"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
+            </div>
+          </nav>
+        </div>
+      </header>
+
+      {/* Mobile Drawer Navigation */}
+      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+        <SheetContent side="right" className="w-[300px] sm:w-[360px] p-6 flex flex-col justify-between glass border-l border-border bg-card/95">
+          <SheetHeader className="text-left space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </div>
+                <SheetTitle className="text-lg font-black tracking-tight">{brandName}</SheetTitle>
               </div>
             </div>
-            
-            <p className="text-[9px] text-muted-foreground uppercase leading-relaxed font-medium">
-              Contributions fuel Snapdragon optimizations and community development protocols.
+            <p className="text-xs text-muted-foreground">
+              Android customization & Snapdragon 4 Gen 2 development platform.
             </p>
+          </SheetHeader>
+
+          {/* Nav List */}
+          <div className="py-6 space-y-2 flex-1 overflow-y-auto">
+            {navLinks.map((link, idx) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between p-3 rounded-2xl hover:bg-muted/70 text-foreground text-sm font-medium transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span>{link.name}</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                </Link>
+              );
+            })}
+
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setIsSearchOpen(true);
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-muted/40 hover:bg-muted text-foreground text-sm font-medium transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Search className="w-4 h-4" />
+                </div>
+                <span>Search Everything</span>
+              </div>
+              <kbd className="px-2 py-0.5 rounded bg-card text-[10px] font-mono text-muted-foreground border">⌘K</kbd>
+            </button>
           </div>
-          
-          <Button onClick={() => setIsSupportOpen(false)} className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black uppercase text-[10px] tracking-widest">
-            Close Terminal
-          </Button>
+
+          {/* Bottom Mobile Actions */}
+          <div className="pt-4 border-t border-border space-y-3">
+            <Button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setIsSupportOpen(true);
+              }}
+              className="w-full h-11 rounded-2xl bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 font-semibold text-xs transition-colors"
+            >
+              <Heart className="w-4 h-4 mr-2 fill-current" />
+              Support Developer Hub
+            </Button>
+
+            {user ? (
+              <div className="space-y-2">
+                {(isSuperAdmin || isAdminRole || isDeveloperRole) && (
+                  <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="w-full h-11 rounded-2xl bg-primary text-primary-foreground font-semibold text-xs">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin Command Console
+                    </Button>
+                  </Link>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full h-10 rounded-2xl border-border text-xs"
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-2" />
+                  Sign Out ({user.email?.split('@')[0]})
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsAuthOpen(true);
+                }}
+                className="w-full h-11 rounded-2xl bg-primary text-primary-foreground font-semibold text-xs"
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign In to Account
+              </Button>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Modern Support Modal */}
+      <Dialog open={isSupportOpen} onOpenChange={setIsSupportOpen}>
+        <DialogContent className="max-w-md rounded-3xl border border-border glass bg-card/95 p-6 sm:p-8 shadow-2xl">
+          <DialogHeader className="text-center pb-2">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto mb-3">
+              <Heart className="w-6 h-6 fill-rose-500/20" />
+            </div>
+            <DialogTitle className="text-xl font-bold tracking-tight">Support SkyHub Development</DialogTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your donations directly support continuous Snapdragon 4 Gen 2 build testing, server bandwidth, and kernel maintenance.
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-6 pt-4">
+            {/* QR Code Container */}
+            {qrUrl && (
+              <div className="p-4 rounded-2xl bg-white border border-border/80 shadow-inner flex flex-col items-center justify-center max-w-[220px] mx-auto">
+                <img src={qrUrl} alt="UPI QR Code" className="w-44 h-44 object-contain" />
+                <span className="text-[10px] font-bold text-slate-800 tracking-wider mt-2 uppercase">Scan with any UPI App</span>
+              </div>
+            )}
+
+            {/* UPI ID Copy Card */}
+            {upiId && (
+              <div className="p-3.5 rounded-2xl bg-muted/50 border border-border/80 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">UPI Address</span>
+                  <span className="text-xs font-mono font-bold text-foreground">{upiId}</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={copyUpiId}
+                  className="h-8 px-3 rounded-xl border-border bg-card text-xs font-semibold"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500 mr-1" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
+              </div>
+            )}
+
+            {/* Telegram Community Quick Links */}
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              {telegramChannel && (
+                <a 
+                  href={telegramChannel} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500 text-sky-500 hover:text-white border border-sky-500/20 text-xs font-semibold transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Channel</span>
+                </a>
+              )}
+              {telegramDiscussion && (
+                <a 
+                  href={telegramDiscussion} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-muted/60 hover:bg-muted text-foreground border border-border/80 text-xs font-semibold transition-colors"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Discussion</span>
+                </a>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
-    </header>
+
+      {/* Command Search Overlay */}
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+    </>
   );
 }

@@ -4,6 +4,7 @@
 import { Navbar } from '@/components/layout/navbar';
 import { Hero } from '@/components/sections/hero';
 import { DonorShowcase } from '@/components/sections/DonorShowcase';
+import { DeviceExplorer } from '@/components/sections/device-explorer';
 import { ROMGrid, ModuleGrid, GuideGrid, RequestROM, RootGrid, ModApkGrid, RecoveryGrid, CustomGrid, LiveWallpaperGrid } from '@/components/sections/content-grid';
 import { Wallpapers } from '@/components/sections/wallpapers';
 import { Slideshow } from '@/components/sections/slideshow';
@@ -71,6 +72,7 @@ export default function Home() {
   const defaultLayout = [
     { id: 'slideshow', order: 0, visible: true },
     { id: 'hero', order: 1, visible: true },
+    { id: 'devices', order: 1.2, visible: true },
     { id: 'donors', order: 1.5, visible: true },
     { id: 'roms', order: 2, visible: true, columns: 3, gap: 4 },
     { id: 'recoveries', order: 2.5, visible: true, columns: 3, gap: 4 },
@@ -101,6 +103,7 @@ export default function Home() {
     switch (section.id) {
       case 'slideshow': return <Slideshow slideshowImages={globalSettings?.slideshowImages || []} rounding={globalSettings?.slideshowRounding} />;
       case 'hero': return <Hero />;
+      case 'devices': return <DeviceExplorer />;
       case 'donors': return <DonorShowcase />;
       case 'roms': return <ROMGrid roms={roms || []} isLoading={romsLoading} />;
       case 'recoveries': return <RecoveryGrid recoveries={recoveries || []} isLoading={recoveriesLoading} />;

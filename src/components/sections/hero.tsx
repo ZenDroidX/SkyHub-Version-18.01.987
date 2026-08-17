@@ -2,7 +2,26 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Smartphone, Settings, Cpu, Zap, Shield, Users, Heart, QrCode, Copy, Check, Send, MessageSquare, Sparkles } from 'lucide-react';
+import { 
+  Smartphone, 
+  Settings, 
+  Cpu, 
+  Zap, 
+  Shield, 
+  Users, 
+  Heart, 
+  QrCode, 
+  Copy, 
+  Check, 
+  Send, 
+  MessageSquare, 
+  Sparkles, 
+  ArrowDown,
+  Layers,
+  Search,
+  ExternalLink,
+  ChevronRight
+} from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -15,6 +34,7 @@ import { DEFAULT_DONATION_CONFIG, SiteSettings } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { SearchOverlay } from '@/components/ui/SearchOverlay';
 
 export function Hero() {
   const db = useFirestore();
@@ -25,6 +45,7 @@ export function Hero() {
   const { data: globalSettings } = useDoc<SiteSettings>(globalSettingsRef);
 
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const upiId = settings?.upiId || DEFAULT_DONATION_CONFIG.upiId;
@@ -32,10 +53,6 @@ export function Hero() {
   const qrUrl = settings?.qrImageUrl || DEFAULT_DONATION_CONFIG.qrImageUrl;
   const telegramChannel = globalSettings?.socialLinks?.telegramChannel || DEFAULT_DONATION_CONFIG.telegramChannelUrl;
   const telegramDiscussion = globalSettings?.socialLinks?.discussion || DEFAULT_DONATION_CONFIG.telegramDiscussionUrl;
-  const telegramLogo = settings?.telegramLogoUrl || DEFAULT_DONATION_CONFIG.telegramLogoUrl;
-  const paymentLink = globalSettings?.supportLinks?.paymentLink || DEFAULT_DONATION_CONFIG.paymentLink;
-  const qrLink = globalSettings?.supportLinks?.qrLink || qrUrl;
-  const slideshowImages = globalSettings?.slideshowImages || [];
 
   const rawHeroTitle = globalSettings?.heroTitle || 'REDMI 12 5G\nPOCO M6 PRO 5G';
   const heroTitle = rawHeroTitle.includes("hemlo User's") 
@@ -56,23 +73,10 @@ export function Hero() {
     }
   };
 
-  const handleSupportClick = () => {
-    if (!upiId) {
-      toast({ title: "Configuration Error", description: "UPI ID has not been set by the admin." });
-      return;
-    }
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = `upi://pay?pa=${upiId}${upiAmount ? `&am=${upiAmount}` : ''}&cu=INR`;
-    } else {
-      setIsSupportOpen(true);
-    }
-  };
-
   const copyUpiId = () => {
     navigator.clipboard.writeText(upiId);
     setCopied(true);
-    toast({ title: "Registry Copied", description: "UPI ID added to clipboard." });
+    toast({ title: "UPI ID Copied", description: "UPI ID copied to clipboard." });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -82,14 +86,13 @@ export function Hero() {
     
     globalSettings.highlightedWords.forEach((hw: any) => {
       if (!hw.word) return;
-      // Escape the word for use in RegExp
       const escapedWord = hw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`(${escapedWord})`, 'gi');
       
       parts = parts.flatMap((p: any, pIdx: number) => {
         if (typeof p === 'string') {
           const split = p.split(regex);
-          return split.map((s, i) => i % 2 !== 0 ? <span key={`${hw.word}-${pIdx}-${i}`} style={{ color: hw.color, textShadow: `0 0 10px ${hw.color}80` }}>{s}</span> : s);
+          return split.map((s, i) => i % 2 !== 0 ? <span key={`${hw.word}-${pIdx}-${i}`} style={{ color: hw.color }}>{s}</span> : s);
         }
         return p;
       });
@@ -99,191 +102,184 @@ export function Hero() {
   };
 
   return (
-    <section className="relative pt-32 pb-32 overflow-hidden flex flex-col items-center justify-center text-center px-6 min-h-[80vh]">
-      {/* Enhanced Background Decor */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-primary/5 blur-[200px] rounded-full animate-glow-pulse"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-primary/10 to-transparent opacity-30"></div>
+    <section className="relative pt-36 sm:pt-44 pb-20 md:pb-28 overflow-hidden flex flex-col items-center justify-center text-center px-4 sm:px-6 min-h-[85vh]">
+      {/* Background ambient lighting effects */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 pointer-events-none overflow-hidden">
+        {/* Soft Radial Ambient Glows */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[900px] h-[500px] bg-primary/10 blur-[150px] rounded-full" />
+        <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-accent/10 blur-[140px] rounded-full" />
+        {/* Fine Dot Grid */}
+        <div className="absolute inset-0 bg-dot-pattern opacity-40 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)]" />
       </div>
 
-      <div className="max-w-5xl mx-auto z-10">
+      <div className="max-w-5xl mx-auto z-10 w-full">
+        {/* Top Protocol Status Pill */}
         <motion.div 
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-border bg-card/10 text-foreground text-[10px] font-black tracking-[0.3em] mb-12 uppercase backdrop-blur-md"
+          transition={{ duration: 0.6 }}
+          className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-primary/25 bg-card/80 text-foreground text-xs font-semibold tracking-wider uppercase mb-8 backdrop-blur-xl shadow-sm"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-          SKY / SKY_PRO PROTOCOL ACTIVE
+          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <span className="text-primary font-bold">SkyHub</span>
+          <span className="text-muted-foreground">•</span>
+          <span className="text-muted-foreground font-mono text-[11px]">Snapdragon 4 Gen 2 Matrix</span>
         </motion.div>
         
+        {/* Hero Title */}
         <motion.h1 
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="text-6xl md:text-8xl lg:text-[120px] font-black tracking-tighter mb-6 flex flex-col leading-[0.85] uppercase text-foreground"
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-6 flex flex-col leading-[1.02] uppercase text-foreground"
         >
           {titleLines.map((line: string, index: number) => (
-            <span key={index} className={index === 0 ? "drop-shadow-2xl" : "text-muted-foreground/30 italic"}>
+            <span key={index} className={index === 0 ? "drop-shadow-sm" : "text-muted-foreground/70 font-bold"}>
               {highlightWords(line)}
             </span>
           ))}
         </motion.h1>
         
+        {/* Hero Subtitle */}
         <motion.p 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-medium leading-relaxed tracking-tight whitespace-pre-line"
+          transition={{ duration: 0.7, delay: 0.15 }}
+          className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-10 font-normal leading-relaxed whitespace-pre-line"
         >
           {highlightWords(heroSubtitle)}
         </motion.p>
 
-        {/* Translucent Network Bar Protocol with Lightning Effects */}
+        {/* Primary Action Buttons */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="w-full max-w-2xl mx-auto mb-16 p-2 rounded-full glass-pill border-border/10 flex flex-col sm:flex-row items-center gap-3 overflow-visible shadow-[0_0_50px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_rgba(0,0,0,0.3)]"
+          transition={{ duration: 0.7, delay: 0.25 }}
+          className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-12"
         >
-          {/* Telegram Channel Button */}
-          <motion.button 
-            whileHover={{ y: -8, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => window.open(telegramChannel, '_blank')}
-            className="group relative h-14 flex-1 rounded-full bg-card/40 backdrop-blur-xl border border-border/20 flex items-center justify-center gap-3 px-8 text-blue-600 dark:text-blue-400 font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-500 hover:border-blue-500/50 overflow-hidden w-full shadow-lg"
+          <Button
+            size="lg"
+            onClick={() => scrollTo('roms')}
+            className="h-12 px-7 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            {/* Full-Surface Lightning Shimmer - Unified Coverage */}
-            <motion.div 
-              animate={{ x: ['-150%', '150%'] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "linear", repeatDelay: 0.5 }}
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/50 dark:via-blue-400/20 to-transparent skew-x-[35deg] pointer-events-none"
-            />
-            
-            <div className="relative z-10 flex items-center gap-3">
-              {telegramLogo ? (
-                <div className="w-6 h-6 rounded-full overflow-hidden bg-background/50 border border-border/20 flex items-center justify-center group-hover:border-blue-500/50 transition-all">
-                  <img src={telegramLogo} className="w-full h-full object-contain" alt="Logo" />
-                </div>
-              ) : <Send className="w-4 h-4" />}
-              <span>Official Channel</span>
-            </div>
-            
-            <Zap className="absolute right-4 w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:scale-125 transition-all text-blue-500 dark:text-blue-400 animate-pulse z-10" />
-          </motion.button>
+            <Cpu className="w-4 h-4 mr-2" />
+            <span>Explore ROMs</span>
+          </Button>
 
-          {/* Telegram Discussion Button */}
-          <motion.button 
-            whileHover={{ y: -8, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => window.open(telegramDiscussion, '_blank')}
-            className="group relative h-14 flex-1 rounded-full bg-card/40 backdrop-blur-xl border border-border/20 flex items-center justify-center gap-3 px-8 text-green-600 dark:text-green-400 font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-500 hover:border-green-500/50 overflow-hidden w-full shadow-lg"
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => scrollTo('devices')}
+            className="h-12 px-7 rounded-2xl border-border/80 bg-card/70 hover:bg-muted text-foreground font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            {/* Full-Surface Lightning Shimmer - Unified Coverage */}
-            <motion.div 
-              animate={{ x: ['-150%', '150%'] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "linear", repeatDelay: 1 }}
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-green-500/50 dark:via-green-400/20 to-transparent skew-x-[35deg] pointer-events-none"
-            />
+            <Smartphone className="w-4 h-4 mr-2 text-primary" />
+            <span>Device Matrix</span>
+          </Button>
 
-            <div className="relative z-10 flex items-center gap-3">
-              <MessageSquare className="w-4 h-4" />
-              <span>Discussion Node</span>
-            </div>
-
-            <Sparkles className="absolute right-4 w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:rotate-12 transition-all text-green-500 dark:text-green-400 z-10" />
-          </motion.button>
+          <Button
+            size="lg"
+            variant="ghost"
+            onClick={() => setIsSearchOpen(true)}
+            className="h-12 px-5 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-medium"
+          >
+            <Search className="w-4 h-4 mr-2 text-muted-foreground" />
+            <span>Command Search (⌘K)</span>
+          </Button>
         </motion.div>
 
+        {/* Community & Discussion Translucent Pills */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-32 flex-wrap"
+          transition={{ delay: 0.35 }}
+          className="w-full max-w-xl mx-auto mb-16 p-2 rounded-2xl sm:rounded-full glass border border-border/80 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-lg"
         >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button 
-              onClick={() => scrollTo('roms')}
-              size="lg" 
-              className="h-16 px-10 rounded-2xl bg-primary text-primary-foreground font-black text-[11px] uppercase tracking-[0.2em] gap-4 shadow-2xl shadow-primary/10 transition-all duration-300 w-full sm:w-auto"
+          {telegramChannel && (
+            <a 
+              href={telegramChannel}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-full bg-sky-500/10 hover:bg-sky-500 text-sky-500 hover:text-white border border-sky-500/20 text-xs font-bold transition-all"
             >
-              <Smartphone className="w-4 h-4" />
-              Explore ROMs
-            </Button>
-          </motion.div>
-          
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button 
-              onClick={handleSupportClick}
-              size="lg" 
-              variant="outline" 
-              className="h-16 px-10 rounded-2xl border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 font-black text-[11px] uppercase tracking-[0.2em] gap-4 transition-all duration-300 w-full sm:w-auto"
+              <Send className="w-3.5 h-3.5" />
+              <span>Official Telegram Channel</span>
+              <ExternalLink className="w-3 h-3 opacity-70" />
+            </a>
+          )}
+
+          {telegramDiscussion && (
+            <a 
+              href={telegramDiscussion}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-full hover:bg-muted text-foreground border border-border/60 text-xs font-bold transition-all"
             >
-              <Heart className="w-4 h-4 fill-current" />
-              Support
-            </Button>
-          </motion.div>
+              <MessageSquare className="w-3.5 h-3.5 text-primary" />
+              <span>Discussion Group</span>
+              <ExternalLink className="w-3 h-3 opacity-70" />
+            </a>
+          )}
         </motion.div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-          {[
-            { label: 'SD 4 Gen 2', icon: <Cpu className="w-5 h-5 text-blue-600" />, desc: 'System Optimization', x: -30 },
-            { label: 'Daily Builds', icon: <Zap className="w-5 h-5 text-blue-500" />, desc: 'Realtime Updates', x: -15 },
-            { label: 'Verified', icon: <Shield className="w-5 h-5 text-blue-600" />, desc: 'Secure Protocol', x: 15 },
-            { label: 'Community', icon: <Users className="w-5 h-5 text-blue-500" />, desc: 'Global Support', x: 30 },
-          ].map((feature, idx) => (
-            <motion.div 
-              key={feature.label} 
-              initial={{ opacity: 0, x: feature.x, y: 20 }}
-              whileInView={{ opacity: 1, x: 0, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 * idx }}
-              whileHover={{ y: -10, transition: { duration: 0.2 } }}
-              className="flex flex-col items-center gap-5 p-10 rounded-[2.5rem] bg-card/30 border border-border hover:bg-card/50 transition-all group"
-            >
-              <div className="p-4 bg-background/50 rounded-2xl group-hover:bg-primary/10 group-hover:text-primary transition-all duration-500">
-                {feature.icon}
-              </div>
-              <div className="text-center transition-all duration-500">
-                <span className="font-black text-[12px] uppercase tracking-[0.2em] block mb-2 text-foreground">{feature.label}</span>
-                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">{feature.desc}</span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {/* Technical Highlights Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left"
+        >
+          <div className="p-4 rounded-2xl bg-card/50 border border-border/70 backdrop-blur-md">
+            <div className="flex items-center gap-2 text-primary font-bold text-xs mb-1 uppercase tracking-wider">
+              <Cpu className="w-3.5 h-3.5" />
+              <span>Architecture</span>
+            </div>
+            <p className="text-sm font-bold text-foreground">Snapdragon 4 Gen 2</p>
+            <p className="text-xs text-muted-foreground mt-0.5">SM4450 4nm Platform</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-card/50 border border-border/70 backdrop-blur-md">
+            <div className="flex items-center gap-2 text-emerald-500 font-bold text-xs mb-1 uppercase tracking-wider">
+              <Zap className="w-3.5 h-3.5" />
+              <span>Kernels</span>
+            </div>
+            <p className="text-sm font-bold text-foreground">KSU & Performance</p>
+            <p className="text-xs text-muted-foreground mt-0.5">KernelSU + Boot Patches</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-card/50 border border-border/70 backdrop-blur-md">
+            <div className="flex items-center gap-2 text-accent font-bold text-xs mb-1 uppercase tracking-wider">
+              <Layers className="w-3.5 h-3.5" />
+              <span>Build Types</span>
+            </div>
+            <p className="text-sm font-bold text-foreground">AOSP 14 / 15 / 16</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Official & Community</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-card/50 border border-border/70 backdrop-blur-md">
+            <div className="flex items-center gap-2 text-rose-500 font-bold text-xs mb-1 uppercase tracking-wider">
+              <Shield className="w-3.5 h-3.5" />
+              <span>Integrity</span>
+            </div>
+            <p className="text-sm font-bold text-foreground">100% Free & Open</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Zero Ads or Paywalls</p>
+          </div>
+        </motion.div>
       </div>
 
-      <Dialog open={isSupportOpen} onOpenChange={setIsSupportOpen}>
-        <DialogContent className="bg-card border-border rounded-[3rem] p-10 max-w-sm flex flex-col items-center text-center gap-6">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tighter">Support Hub</DialogTitle>
-          </DialogHeader>
-          
-          <div className="relative w-full aspect-square bg-white rounded-[2rem] p-4 border border-border overflow-hidden shadow-inner">
-            {qrLink && <img src={qrLink} alt="Payment QR" className="w-full h-full object-contain" />}
-          </div>
+      {/* Subtle Bottom Scroll Indicator */}
+      <motion.button 
+        onClick={() => scrollTo('roms')}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+        className="mt-16 inline-flex flex-col items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
+      >
+        <span className="text-[11px] font-medium tracking-wider uppercase">Scroll to explore</span>
+        <ArrowDown className="w-4 h-4 text-primary group-hover:translate-y-1 transition-transform animate-bounce" />
+      </motion.button>
 
-          <div className="w-full space-y-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Registry UPI ID</span>
-              <div className="bg-muted p-4 rounded-2xl flex items-center justify-between border border-border group hover:border-primary/40 transition-all">
-                <span className="text-[10px] font-code text-foreground truncate">{upiId}</span>
-                <Button variant="ghost" size="icon" onClick={copyUpiId} className="h-8 w-8 rounded-xl shrink-0 ml-2">
-                  {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                </Button>
-              </div>
-            </div>
-            
-            <p className="text-[9px] text-muted-foreground uppercase leading-relaxed font-medium">
-              Contributions fuel Snapdragon optimizations and community development protocols.
-            </p>
-          </div>
-          
-          <Button onClick={() => setIsSupportOpen(false)} className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black uppercase text-[10px] tracking-widest">
-            Close Terminal
-          </Button>
-        </DialogContent>
-      </Dialog>
+      {/* Command Search Overlay Modal */}
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </section>
   );
 }
